@@ -4,12 +4,6 @@
 source "$HOME/.local/share/wallpaper/etc/wallpaper.cfg"
 source "$HOME/.local/share/wallpaper/lib/common.sh"
 
-if [ "$XDG_SESSION_TYPE" == "x11" ]; then
-    source "${lib_dir}/x_xorg.sh"
-else
-    source "${lib_dir}/x_wayland.sh"
-fi
-
 usage() {
   echo "add - Adds wallpaper images to list."
   echo
@@ -54,6 +48,13 @@ if [ ! -f "$favorites_file" ]; then
     touch "$favorites_file"
 fi
 
+add_to_blacklist() {
+    image="$1"
+    echo "Adding $image to blacklist"
+    echo "$(md5sum ${wallpaper_dir}/${image} | awk '{print $1}')::$image" >> "$blacklist_file"
+    rm -f "$image"
+}
+
 IFS=$'\n'
 for image in $images; do
     if [ ! -f "${wallpaper_dir}/${image}" ]; then
@@ -66,9 +67,7 @@ for image in $images; do
     fi
 
     if [ "$list_name" == "blacklist" ]; then
-        echo "Adding $image to blacklist"
-        echo "$(md5sum ${wallpaper_dir}/${image} | awk '{print $1}')::$image" >> "$blacklist_file"
-        rm -f "$image"
+        add_to_blacklist "$image"
         continue
     fi
 

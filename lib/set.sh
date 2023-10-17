@@ -11,12 +11,6 @@ interval=600
 source "$HOME/.local/share/wallpaper/etc/wallpaper.cfg"
 source "$HOME/.local/share/wallpaper/lib/common.sh"
 
-if [ "$XDG_SESSION_TYPE" == "x11" ]; then
-    source "${lib_dir}/x_xorg.sh"
-else
-    source "${lib_dir}/x_wayland.sh"
-fi
-
 # Initialize flags and variables
 once_flag=false
 display_flag=false
@@ -39,7 +33,6 @@ usage() {
     echo "  <dir containing images>  Specify a directory containing images."
     exit 0
 }
-
 
 # Process command line arguments
 while [[ $# -gt 0 ]]; do
@@ -111,6 +104,14 @@ get_display_name() {
     echo "$segment"
 }
 
+get_images() {
+    if [ -n "$list" ]; then
+        cat "${lists_dir}/${list}.txt"
+    else
+        find "$wallpaper_dir" -maxdepth 1 -type f -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png'
+    fi
+}
+
 get_random_image() {
     if [ -n "$1" ]; then
         echo "$1" | shuf -n 1
@@ -133,16 +134,22 @@ update_current_info() {
     fi
 }
 
+add_to_track_file() {
+    img="$1"
+    # Add the image to the list of last wallpapers. Keep 1000 lines in the file.
+    if [ -n "$img" ]; then
+        img_basename=$(basename "$img")
+        echo "$img_basename" >> "$track_file"
+        tail -n $last_set_count "$track_file" > "$track_file.tmp"
+        mv "$track_file.tmp" "$track_file"
+    fi
+}
+
 while true; do
     monitors=$(get_monitors)
     log_debug "found monitors: $monitors"
 
-    if [ -n "$list" ]; then
-        images=$(cat "${lists_dir}/${list}.txt")
-    else
-        images=$(find "$wallpaper_dir" -maxdepth 1 -type f -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png')
-    fi
-
+    images=$(get_images)
     log_debug "found $(echo "$images" | wc -l) images"
 
     IFS=$'\n'
@@ -160,6 +167,7 @@ while true; do
         fi
 
         x=0
+        # Try to set the wallpaper 10 times before giving up.
         while [ $x -lt 10 ]; do
             x=$((x+1))
 
@@ -181,13 +189,7 @@ while true; do
         done
 
         if [ "$no_track" == false ]; then
-            # Add the image to the list of last wallpapers. Keep 1000 lines in the file.
-            if [ -n "$img" ]; then
-                img_basename=$(basename "$img")
-                echo "$img_basename" >> "$track_file"
-                tail -n $last_set_count "$track_file" > "$track_file.tmp"
-                mv "$track_file.tmp" "$track_file"
-            fi
+            add_to_track_file "$img"
         fi
 
         update_current_info "$displaynum" "$img"

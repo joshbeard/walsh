@@ -4,7 +4,7 @@ source "$HOME/.local/share/wallpaper/etc/wallpaper.cfg"
 export SWWW_TRANSITION_FPS=60
 export SWWW_TRANSITION_STEP=2
 
-check_required_command swww hyprctl
+required_commands=("swww" "hyprctl")
 
 # Function to set wallpaper for a specific display
 # Arguments:

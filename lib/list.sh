@@ -3,12 +3,6 @@
 source "$HOME/.local/share/wallpaper/etc/wallpaper.cfg"
 source "$HOME/.local/share/wallpaper/lib/common.sh"
 
-if [ "$XDG_SESSION_TYPE" == "x11" ]; then
-    source "${lib_dir}/x_xorg.sh"
-else
-    source "${lib_dir}/x_wayland.sh"
-fi
-
 usage() {
   echo "list - View lists"
   echo

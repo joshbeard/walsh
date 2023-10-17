@@ -13,12 +13,6 @@ usage() {
     exit 0
 }
 
-if [ "$XDG_SESSION_TYPE" == "x11" ]; then
-    source "${lib_dir}/x_xorg.sh"
-else
-    source "${lib_dir}/x_wayland.sh"
-fi
-
 display="$1"
 echo grep "^$display:" "$currently_set_file" | awk -F ':' '{print $2}'
 current=$(grep "^$display:" "$currently_set_file" | awk -F ':' '{print $2}')
