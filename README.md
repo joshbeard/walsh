@@ -13,14 +13,14 @@ on:
   soon).
 
 The result is random wallpapers across all connected displays, sourced from
-thousands of random images at a regular interval, that I can add to lists on
+thousands of random images at a regular interval that I can add to lists
 whether running on Xorg or Wayland.
 
 ## Features
 
 * Download wallpapers from Bing and Unsplash
 * Randomly set a wallpaper per display
-* Set wallpapers on demand
+* Set wallpapers on demand, per-display
 * Add wallpapers to a list and set from a list
 * Track recent wallpapers and avoid setting them for a while
 * Blacklist wallpapers
