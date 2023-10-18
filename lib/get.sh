@@ -9,6 +9,7 @@ source "$HOME/.local/share/wallpaper/lib/common.sh"
 
 dl_bing=true
 dl_unsplash=true
+move=true
 
 usage() {
     echo "Usage: $0 [bing|unsplash] [ARGS]"
@@ -20,6 +21,9 @@ while [ $# -gt 0 ]; do
     case "$1" in
         -h|--help)
             usage
+            ;;
+        -n|--no-move)
+            move=false
             ;;
         bing)
             dl_unsplash=false
@@ -72,4 +76,6 @@ if [ -z "$(ls -A $src_path)" ]; then
 fi
 
 # Move all files in src_path to dst_path.
-mv "${src_path}"/* "${wallpaper_dir}"
+if [ "$move" = true ]; then
+    mv -v "${src_path}"/* "${wallpaper_dir}"
+fi
