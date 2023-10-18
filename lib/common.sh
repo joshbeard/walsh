@@ -26,9 +26,14 @@ log_warn() {
     logger -t "wallpaper" -p "user.warn" "$@"
 }
 
-if [ "$XDG_SESSION_TYPE" == "x11" ]; then
-    source "${lib_dir}/x_xorg.sh"
-else
-    source "${lib_dir}/x_wayland.sh"
-fi
+init() {
+    if [ "$XDG_SESSION_TYPE" == "x11" ]; then
+        source "${lib_dir}/x_xorg.sh"
+    else
+        source "${lib_dir}/x_wayland.sh"
+    fi
 
+    mkdir -p "${var_dir}"
+}
+
+init

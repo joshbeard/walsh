@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Adds the image(s) to a favorites file.
+# Adds the image(s) to a list file (favorites).
 # Images can be specified as arguments or by specifying a display to query.
 source "$HOME/.local/share/wallpaper/etc/wallpaper.cfg"
 source "$HOME/.local/share/wallpaper/lib/common.sh"
@@ -44,10 +44,6 @@ if [[ "$1" =~ ^[0-9]+$ ]]; then
     images="$wallpaper"
 fi
 
-if [ ! -f "$favorites_file" ]; then
-    touch "$favorites_file"
-fi
-
 add_to_blacklist() {
     image="$1"
     echo "Adding $image to blacklist"
@@ -71,9 +67,11 @@ for image in $images; do
         continue
     fi
 
-    if grep -q "$image" "${lists_dir}/${list_name}.txt"; then
-        echo "Image ${image} is already in ${list_name} list"
-        continue
+    if [ -f "${lists_dir}/${list_name}.txt" ]; then
+        if grep -q "$image" "${lists_dir}/${list_name}.txt"; then
+            echo "Image ${image} is already in ${list_name} list"
+            continue
+        fi
     fi
 
     echo "Adding $image to list ${lists_dir}/${list_name}.txt"

@@ -183,7 +183,10 @@ while true; do
 
             if [ "$ignore_track" = false ]; then
                 # Check if the image is in the list of last wallpapers and skip it if it is.
-                grep -q "$img_basename" "$track_file" && echo "Skipping $img_basename because it was recently set" && continue
+                if [ -f "$track_file" ] && grep -q "$img_basename" "$track_file"; then
+                    log_debug "Skipping $img_basename because it was recently set"
+                    continue
+                fi
             fi
 
             set_wallpaper "$displaynum" "$img" && break
@@ -200,7 +203,7 @@ while true; do
     done
 
     if [ "$once_flag" = true ]; then
-        echo "Exiting because --once flag was set"
+        log_debug "Exiting because --once flag was set"
         break
     fi
 
