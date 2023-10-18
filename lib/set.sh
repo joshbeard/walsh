@@ -128,8 +128,10 @@ update_current_info() {
     fi
 
     if grep "^$display:" $currently_set_file; then
+        log_debug "Updating $display in $currently_set_file to ${img_basename}"
         sed -i "/^${display}:/s|.*|${display}:${img_basename}|" "$currently_set_file"
     else
+        log_debug "Adding $display to $currently_set_file with ${img_basename}"
         echo "$display:$img_basename" >> "$currently_set_file"
     fi
 }
