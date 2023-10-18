@@ -8,7 +8,7 @@ They're currently somewhat specific to my Linux desktop (arch btw) and depend
 on:
 
 * [gosimac](https://github.com/1995parham/gosimac) for downloading wallpapers
-  from Bing and Usplash (via cron with [`bin/wall-get.sh`](bin/wall-get.sh)).
+  from Bing and Usplash (e.g. via cron).
 * on xorg: `xrandr` and [nitrogen](https://wiki.archlinux.org/title/Nitrogen)
 * on wayland: hyprland and [swww](https://github.com/Horus645/swww) (hyprland's
   `hyprctl` command is used, but this will be changed to something more generic
@@ -52,6 +52,24 @@ whether running on Xorg or Wayland.
 * Export the `bin` directory in `$PATH`
 
 ## Usage
+
+```plain
+walls.sh - Manage wallpaper images on X and Wayland
+
+Download, set, randomize, blacklist and add wallpapers to lists.
+
+Usage: walls.sh SUBCOMMAND [SUBCOMMAND OPTIONS]
+
+Subcommands:
+  help      - Show this help message.
+  set       - Set wallpaper(s) and exit.
+  start     - Start the wallpaper randomizer.
+  blacklist - Blacklist the current wallpaper.
+  download  - Download wallpapers.
+  add       - Add a wallpaper to a list.
+  list      - List wallpapers.
+  view      - View the wallpaper set.
+```
 
 ### Help
 
