@@ -2,7 +2,7 @@
 
 Scripts for managing desktop wallpapers.
 
-<img align="right" src=".doc/image.jpg">
+<img align="right" width="256" height="256" src=".doc/image.jpg">
 
 They're currently somewhat specific to my Linux desktop (arch btw) and depend
 on:
