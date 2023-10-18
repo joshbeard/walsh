@@ -11,7 +11,7 @@ dl_bing=true
 dl_unsplash=true
 
 usage() {
-    echo "Usage: $0 [bing|unsplash]"
+    echo "Usage: $0 [bing|unsplash] [ARGS]"
     exit 0
 }
 
@@ -23,9 +23,11 @@ while [ $# -gt 0 ]; do
             ;;
         bing)
             dl_unsplash=false
+            break
             ;;
         unsplash)
             dl_bing=false
+            break
             ;;
         *)
             usage
@@ -38,12 +40,12 @@ check_required_command md5sum gosimac
 
 if [ "$dl_bing" = true ]; then
     echo "Downloading from Bing..."
-    gosimac bing
+    gosimac bing $@
 fi
 
 if [ "$dl_unsplash" = true ]; then
     echo "Downloading from Unsplash..."
-    gosimac unsplash
+    gosimac unsplash $@
 fi
 
 # Compare each file in src_path to the entries in blacklist.txt, formatted as

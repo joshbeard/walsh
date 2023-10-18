@@ -2,26 +2,19 @@
 
 Scripts for managing desktop wallpapers.
 
-They're currently somewhat specific to my Linux desktop and depend on:
+They're currently somewhat specific to my Linux desktop (arch btw) and depend
+on:
 
 * [gosimac](https://github.com/1995parham/gosimac) for downloading wallpapers
   from Bing and Usplash (via cron with [`bin/wall-get.sh`](bin/wall-get.sh)).
-* on xorg: xrandr and nitrogen
-* on wayland: hyprland and [swww](https://github.com/Horus645/swww)
+* on xorg: `xrandr` and [nitrogen](https://wiki.archlinux.org/title/Nitrogen)
+* on wayland: hyprland and [swww](https://github.com/Horus645/swww) (hyprland's
+  `hyprctl` command is used, but this will be changed to something more generic
+  soon).
 
-These are just hacked together over time to provide certain functionality.
-I don't even see my wallpapers most of the time, since they're typically
-covered with other windows.
-
-The result is random wallpapers across all connected displays sourced from
-thousands of random images at a regular interval that I can add to lists on
-Xorg or Wayland.
-
-## Install
-
-* Clone to `$HOME/.local/share/wallpaper` (or somewhere)
-* Modify the [config file](etc/wallpaper.cfg)
-* Export the `bin` directory in `$PATH`
+The result is random wallpapers across all connected displays, sourced from
+thousands of random images at a regular interval, that I can add to lists on
+whether running on Xorg or Wayland.
 
 ## Features
 
@@ -32,6 +25,29 @@ Xorg or Wayland.
 * Track recent wallpapers and avoid setting them for a while
 * Blacklist wallpapers
 * Supports Xorg and Wayland
+
+## Install
+
+* Install pre-requisite packages
+    These are easy to change, but requires modifying the default config and
+    possibly some of the wrapper code. See [`lib/x_xorg.sh`](lib/x_xorg.sh)
+    and [`lib/x_wayland.sh`](lib/x_wayland.sh).
+
+    On Arch with Xorg:
+
+    ```shell
+    yay -S nitrogen feh gosimac
+    ```
+
+    On Arch with Hyprland (Wayland):
+
+    ```shell
+    yay -S hyprland swww feh
+    ```
+
+* Clone to `$HOME/.local/share/wallpaper` (or somewhere)
+* Modify the [config file](etc/wallpaper.cfg)
+* Export the `bin` directory in `$PATH`
 
 ## Usage
 
