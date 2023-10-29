@@ -21,8 +21,13 @@ fi
 
 # No arguments provided, list all lists.
 if [ -z "$1" ]; then
-    ls "${lists_dir}" | sed 's/\.txt//'
-    exit $?
+    for list in "${lists_dir}"/*.txt; do
+        count="$(wc -l "${list}" | awk '{print $1}')"
+        list_name="$(basename "${list}" .txt) (${count})"
+        echo "${list_name}"
+    done
+
+    exit 0
 fi
 
 # If a list name is provided, view that list.
