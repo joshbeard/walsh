@@ -3,11 +3,17 @@
 source "$HOME/.local/share/wallpaper/etc/wallpaper.cfg"
 source "$HOME/.local/share/wallpaper/lib/common.sh"
 
+verbose=false
+
 usage() {
   echo "list - View lists"
   echo
-  echo "Usage: list [LIST]"
+  echo "Usage: list [FLAGS] [LIST]"
   echo "  <list>  Specify a list name to view."
+  echo
+  echo "Flags:"
+  echo "  -v      Verbose output."
+  echo "  -h      Display this help message."
   echo
   echo "Example:"
   echo "  list         # List all lists."
@@ -15,9 +21,22 @@ usage() {
   exit 0
 }
 
-if [ "$1" == "-h" ] || [ "$1" == "--help" ]; then
-    usage
-fi
+# Check for flags.
+while getopts ":vh" opt; do
+    case "${opt}" in
+        v)
+            verbose=true
+            shift
+            ;;
+        h)
+            usage
+            ;;
+        \?)
+            echo "Invalid option: -${OPTARG}" >&2
+            usage
+            ;;
+    esac
+done
 
 # No arguments provided, list all lists.
 if [ -z "$1" ]; then
@@ -32,6 +51,14 @@ fi
 
 # If a list name is provided, view that list.
 list_name="$1"
-echo "Viewing ${lists_dir}/${list_name}.txt"
-echo "============================================================"
+if [ ! -f "${lists_dir}/${list_name}.txt" ]; then
+    echo "List '${list_name}' does not exist." >&2
+    exit 1
+fi
+
+if [ "$verbose" = true ]; then
+    count="$(wc -l "${lists_dir}/${list_name}.txt" | awk '{print $1}')"
+    echo "List '${list_name}' (${count}):"
+    echo "----------------------------------------"
+fi
 cat "${lists_dir}/${list_name}.txt"
