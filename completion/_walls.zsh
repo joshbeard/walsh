@@ -31,8 +31,7 @@ _walls_completion() {
                 '*:dir containing images:_files -/' 
             ;;
         add)
-            # We assume that the list names are files in a specific directory, adjust as needed
-            local list_dir="$HOME/.local/share/wallpaper/var/lists"  # Replace with the actual path
+            local list_dir="$HOME/.local/share/wallpaper/var/lists"
             _arguments \
                 '2:the display with the wallpaper (digit)' \
                 '*:file:_files' \
@@ -54,7 +53,7 @@ _walls_completion() {
                 '-h[Display help message]' \
                 '2:list:->lists'
             if [[ $state == lists ]]; then
-                local list_dir="$HOME/.local/share/wallpaper/var/lists"  # Replace with the actual path
+                local list_dir="$HOME/.local/share/wallpaper/var/lists"
                 local -a list_files
                 list_files=($list_dir/*(.:t:r))
 
@@ -62,7 +61,6 @@ _walls_completion() {
             fi
             ;;
         view)
-            local -a _digits=(0 1 2 3 4 5 6 7 8 9)
             _arguments '2:display'
             ;;
         *)
@@ -71,6 +69,5 @@ _walls_completion() {
     esac
 }
 
-# Associate the function with 'walls.sh' command using compdef
 compdef _walls_completion walls.sh
 
