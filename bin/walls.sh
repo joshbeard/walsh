@@ -37,7 +37,7 @@ case $cmd in
         shift
         $libdir/set.sh $@
         ;;
-    blacklist)
+    bl|blacklist)
         shift
         $libdir/add.sh $@ blacklist
         ;;
