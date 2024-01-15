@@ -108,7 +108,18 @@ get_images() {
     if [ -n "$list" ]; then
         cat "${lists_dir}/${list}.txt"
     else
-        find "$wallpaper_dir" -maxdepth 1 -type f -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png'
+        if [ -n "$remote" ]; then
+            # Remove the protocol:// from the remote URL
+            remote_url=$(echo "$remote" | sed -e 's|^[^:]*://||')
+            # Split the URL into host and path on the colon
+            remote_host=$(echo "$remote_url" | cut -d: -f1)
+            remote_path=$(echo "$remote_url" | cut -d: -f2-)
+            # Get the images from the remote directory
+            # echo "Getting images from $remote_host:$remote_path"
+            ssh "$remote_host" "find \"$remote_path\" -maxdepth 1 -type f -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png'"
+        else
+          find "$wallpaper_dir" -maxdepth 1 -type f -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png'
+        fi
     fi
 }
 
@@ -201,6 +212,17 @@ while true; do
         log_info "Display $displaynum set to: $img"
         displaynum=$((displaynum+1))
     done
+
+    # Remote stale images from $var_dir/remote - images that aren't currently set.
+    if [ -n "$remote" ]; then
+        log_debug "Removing stale images from $var_dir/remote"
+        for img in $(ls "$var_dir/remote"); do
+            if ! grep -q "$img" "$currently_set_file"; then
+                log_debug "Removing stale image $img"
+                rm "$var_dir/remote/$img"
+            fi
+        done
+    fi
 
     if [ "$once_flag" = true ]; then
         log_debug "Exiting because --once flag was set"

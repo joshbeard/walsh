@@ -15,6 +15,24 @@ set_wallpaper() {
         exit
     fi
 
+    # If remote is set, retrieve the image from the remote host and store it
+    # in ${var_dir}/remote.
+    if [ -n "$remote" ]; then
+        # Remove the protocol:// from the remote URL
+        remote_url=$(echo "$remote" | sed -e 's|^[^:]*://||')
+        # Split the URL into host and path on the colon
+        remote_host=$(echo "$remote_url" | cut -d: -f1)
+        remote_path=$(echo "$remote_url" | cut -d: -f2-)
+
+        img_name=$(basename "$img")
+        log_info "Getting image ${img_name} from $remote_host:$img"
+        # Get the images from the remote directory
+        # log_info "Getting images from $remote_host:$remote_path"
+        scp "$remote_host:$img" "$var_dir/remote/$img_name"
+        img="$var_dir/remote/$img_name"
+    fi
+
+
     # Replace {{DISPLAY}} with the display number and {{IMAGE}} with the image.
     set_wallpaper_cmd=$(echo "$xorg_set_wallpaper_cmd" | sed "s|{{DISPLAY}}|$display|g" | sed "s|{{IMAGE}}|$img|g")
     log_info "Running command: $set_wallpaper_cmd"
