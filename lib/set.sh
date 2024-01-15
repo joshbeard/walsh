@@ -115,8 +115,12 @@ get_images() {
             remote_host=$(echo "$remote_url" | cut -d: -f1)
             remote_path=$(echo "$remote_url" | cut -d: -f2-)
             # Get the images from the remote directory
-            # echo "Getting images from $remote_host:$remote_path"
+            log_info "Getting images from $remote_host:$remote_path"
             ssh "$remote_host" "find \"$remote_path\" -maxdepth 1 -type f -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png'"
+            if [ $? -ne 0 ]; then
+                log_error "Error getting images from $remote_host:$remote_path"
+                exit 1
+            fi
         else
           find "$wallpaper_dir" -maxdepth 1 -type f -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png'
         fi

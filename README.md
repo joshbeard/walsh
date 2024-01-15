@@ -26,6 +26,7 @@ whether running on Xorg or Wayland.
 * Add wallpapers to a list and set from a list
 * Track recent wallpapers and avoid setting them for a while
 * Blacklist wallpapers
+* Source images from remote server over SSH
 * Supports Xorg and Wayland
 
 ## Install
@@ -153,4 +154,20 @@ walls.sh download
 
 ```shell
 walls.sh view 0
+```
+
+### Remote Source
+
+Set the `remote` config option:
+
+```shell
+remote="ssh://foo.bar:/path/to/wallpapers
+```
+
+The images will get cached to `${walls_var_dir}/remote`.
+
+To use a remote source in a crontab, make sure SSH is configured correct. E.g.
+
+```plain
+*/10 * * * * pgrep XORG && DISPLAY=:0 XDG_SESSION_TYPE=x11 SSH_AUTH_SOCK=/path/to/ssh_agent nice -n 19 walls.sh set --once
 ```
