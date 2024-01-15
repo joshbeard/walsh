@@ -109,9 +109,7 @@ get_images() {
         cat "${lists_dir}/${list}.txt"
     else
         if [ -n "$remote" ]; then
-            # Remove the protocol:// from the remote URL
             remote_url=$(echo "$remote" | sed -e 's|^[^:]*://||')
-            # Split the URL into host and path on the colon
             remote_host=$(echo "$remote_url" | cut -d: -f1)
             remote_path=$(echo "$remote_url" | cut -d: -f2-)
             # Get the images from the remote directory
@@ -162,6 +160,25 @@ add_to_track_file() {
     fi
 }
 
+get_remote_wallpaper() {
+    # Remove the protocol:// from the remote URL
+    remote_url=$(echo "$remote" | sed -e 's|^[^:]*://||')
+    # Split the URL into host and path on the colon
+    remote_host=$(echo "$remote_url" | cut -d: -f1)
+    remote_path=$(echo "$remote_url" | cut -d: -f2-)
+
+    img_name=$(basename "$img")
+    log_info "Getting image ${img_name} from $remote_host:$img"
+    # Get the images from the remote directory
+    # log_info "Getting images from $remote_host:$remote_path"
+    scp "$remote_host:$img" "$var_dir/remote/$img_name"
+    if [ $? -ne 0 ]; then
+        log_error "Error getting image from $remote_host:$remote_path/$img"
+        exit 1
+    fi
+    img="$var_dir/remote/$img_name"
+}
+
 while true; do
     monitors=$(get_monitors)
     log_debug "found monitors: $monitors"
@@ -192,7 +209,9 @@ while true; do
             img_basename=$(basename "$img")
 
             if [ -n "$list" ]; then
-                img="${wallpaper_dir}/${img}"
+                log_debug "Setting image from list: $img"
+                ignore_track=true
+                no_track=true
             fi
 
 
@@ -204,16 +223,24 @@ while true; do
                 fi
             fi
 
-            set_wallpaper "$displaynum" "$img" && break
+            if [ -n "$remote" ]; then
+                get_remote_wallpaper "$img"
+                img_path="$var_dir/remote/$img_basename"
+            else
+                img_path="${wallpaper_dir}/${img_basename}"
+            fi
+
+            echo "Setting display $displaynum to: $img_path"
+            set_wallpaper "$displaynum" "$img_path" && break
             sleep 1
         done
 
         if [ "$no_track" == false ]; then
-            add_to_track_file "$img"
+            add_to_track_file "$img_basename"
         fi
 
-        update_current_info "$displaynum" "$img"
-        log_info "Display $displaynum set to: $img"
+        update_current_info "$displaynum" "$img_basename"
+        log_info "Display $displaynum set to: $img_basename"
         displaynum=$((displaynum+1))
     done
 

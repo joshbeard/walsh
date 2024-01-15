@@ -47,15 +47,31 @@ fi
 add_to_blacklist() {
     image="$1"
     echo "Adding $image to blacklist"
+
+    if [ -n "$remote" ]; then
+        wallpaper_dir="${var_dir}/remote"
+
+        remote_url=$(echo "$remote" | sed -e 's|^[^:]*://||')
+        remote_host=$(echo "$remote_url" | cut -d: -f1)
+        remote_path=$(echo "$remote_url" | cut -d: -f2-)
+
+        md5sum=$(ssh "$remote_host" "md5sum $remote_path/$image" | awk '{print $1}')
+    fi
+
     echo "$(md5sum ${wallpaper_dir}/${image} | awk '{print $1}')::$image" >> "$blacklist_file"
-    rm -f "$image"
+
+    if [ -z "$remote" ]; then
+        rm -f "$image"
+    fi
 }
 
 IFS=$'\n'
 for image in $images; do
-    if [ ! -f "${wallpaper_dir}/${image}" ]; then
-        echo "File not found: ${wallpaper_dir}/${image}"
-        continue
+    if [ -z "$remote" ]; then
+        if [ ! -f "${wallpaper_dir}/${image}" ]; then
+            echo "File not found: ${wallpaper_dir}/${image}"
+            continue
+        fi
     fi
 
     if [ ! -d "$lists_dir" ]; then
