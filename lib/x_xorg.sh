@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 source "$HOME/.local/share/wallpaper/etc/wallpaper.cfg"
 
-required_commands=("nitrogen" "xrandr")
+export required_commands=("nitrogen" "xrandr")
 
 # Function to set wallpaper for a specific display
 # Arguments:

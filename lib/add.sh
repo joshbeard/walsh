@@ -22,7 +22,6 @@ if [ "$#" -eq 0 ] || [ "$1" == "-h" ] || [ "$1" == "--help" ]; then
 fi
 
 images="$@"
-first_arg="$1"
 last_arg="${@: -1}"
 list_name="$last_arg"
 
@@ -54,8 +53,6 @@ add_to_blacklist() {
         remote_url=$(echo "$remote" | sed -e 's|^[^:]*://||')
         remote_host=$(echo "$remote_url" | cut -d: -f1)
         remote_path=$(echo "$remote_url" | cut -d: -f2-)
-
-        md5sum=$(ssh "$remote_host" "md5sum $remote_path/$image" | awk '{print $1}')
     fi
 
     echo "$(md5sum "${wallpaper_dir}/${image}" | awk '{print $1}')::$image" >> "$blacklist_file"

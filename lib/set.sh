@@ -42,7 +42,6 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
         --interval)
-            interval_flag=true
             if [[ -n "$2" && "$2" =~ ^[0-9]+$ ]]; then
                 interval="$2"
                 shift 2
@@ -190,7 +189,6 @@ while true; do
     displaynum=0
 
     for monitor in $monitors; do
-        current_display=$(get_display_name "$monitor")
         img=""
         img_basename=""
 
