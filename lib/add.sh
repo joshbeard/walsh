@@ -49,10 +49,6 @@ add_to_blacklist() {
 
     if [ -n "$remote" ]; then
         wallpaper_dir="${var_dir}/remote"
-
-        remote_url=$(echo "$remote" | sed -e 's|^[^:]*://||')
-        remote_host=$(echo "$remote_url" | cut -d: -f1)
-        remote_path=$(echo "$remote_url" | cut -d: -f2-)
     fi
 
     echo "$(md5sum "${wallpaper_dir}/${image}" | awk '{print $1}')::$image" >> "$blacklist_file"

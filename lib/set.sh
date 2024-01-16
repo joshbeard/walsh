@@ -188,7 +188,7 @@ while true; do
     IFS=$'\n'
     displaynum=0
 
-    for monitor in $monitors; do
+    for _ in $monitors; do
         img=""
         img_basename=""
 
