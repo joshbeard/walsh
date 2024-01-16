@@ -1,5 +1,7 @@
 # Josh's Wallpaper Scripts
 
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/f86a02dbb74243e0a7e25e657e2be810)](https://app.codacy.com/gh/joshbeard/walls.sh?utm_source=github.com&utm_medium=referral&utm_content=joshbeard/walls.sh&utm_campaign=Badge_Grade)
+
 Scripts for managing desktop wallpapers.
 
 <img align="right" width="256" height="256" src=".doc/image.jpg">
