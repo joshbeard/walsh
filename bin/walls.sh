@@ -31,27 +31,27 @@ case $cmd in
         ;;
     set)
         shift
-        $libdir/set.sh --once $@
+        "$libdir/set.sh" --once $@
         ;;
     start)
         shift
-        $libdir/set.sh $@
+        "$libdir/set.sh" $@
         ;;
     bl|blacklist)
         shift
-        $libdir/add.sh $@ blacklist
+        "$libdir/add.sh" $@ blacklist
         ;;
     download)
         shift
-        $libdir/get.sh $@
+        "$libdir/get.sh" $@
         ;;
     add)
         shift
-        $libdir/add.sh $@
+        "$libdir/add.sh" $@
         ;;
     list)
         shift
-        $libdir/list.sh $@
+        "$libdir/list.sh" $@
         ;;
     view)
         shift
@@ -61,7 +61,7 @@ case $cmd in
             exit 1
         fi
 
-        $libdir/view.sh $@
+        "$libdir/view.sh" $@
         ;;
     *)
         usage
