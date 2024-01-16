@@ -18,7 +18,7 @@ set_wallpaper() {
     # Replace {{DISPLAY}} with the display number and {{IMAGE}} with the image.
     set_wallpaper_cmd=$(echo "$xorg_set_wallpaper_cmd" | sed "s|{{DISPLAY}}|$display|g" | sed "s|{{IMAGE}}|$img|g")
     log_info "Running command: $set_wallpaper_cmd"
-    eval $set_wallpaper_cmd || return 1
+    eval "$set_wallpaper_cmd" || return 1
 }
 
 # Function to get the list of monitors

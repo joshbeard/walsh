@@ -10,7 +10,7 @@ usage() {
     echo
     echo "Download, set, randomize, blacklist and add wallpapers to lists."
     echo
-    echo "Usage: $(basename $0) SUBCOMMAND [SUBCOMMAND OPTIONS]"
+    echo "Usage: $(basename "$0") SUBCOMMAND [SUBCOMMAND OPTIONS]"
     echo
     echo "Subcommands:"
     echo "  help      - Show this help message."

@@ -13,7 +13,7 @@ required_commands=("swww" "hyprctl")
 set_wallpaper() {
     set_wallpaper_cmd=$(echo "$wayland_set_wallpaper_cmd" | sed "s|{{DISPLAY}}|$display|g" | sed "s|{{IMAGE}}|$img|g")
     log_debug "Running command: $set_wallpaper_cmd"
-    eval $set_wallpaper_cmd || return 1
+    eval "$set_wallpaper_cmd" || return 1
 }
 
 # Function to get the list of monitors

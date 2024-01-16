@@ -140,7 +140,7 @@ update_current_info() {
         touch "$currently_set_file"
     fi
 
-    if grep "^$display:" $currently_set_file; then
+    if grep "^$display:" "$currently_set_file"; then
         log_debug "Updating $display in $currently_set_file to ${img_basename}"
         sed -i "/^${display}:/s|.*|${display}:${img_basename}|" "$currently_set_file"
     else
@@ -155,7 +155,7 @@ add_to_track_file() {
     if [ -n "$img" ]; then
         img_basename=$(basename "$img")
         echo "$img_basename" >> "$track_file"
-        tail -n $last_set_count "$track_file" > "$track_file.tmp"
+        tail -n "$last_set_count" "$track_file" > "$track_file.tmp"
         mv "$track_file.tmp" "$track_file"
     fi
 }

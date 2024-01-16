@@ -56,21 +56,21 @@ fi
 # md5sum::path. If the md5sum of the file matches the md5sum in blacklist.txt,
 # then the file is removed from src_path.
 for file in $src_path/*; do
-    md5=$(md5sum $file | awk '{print $1}')
-    if grep -q $md5 "$blacklist_file"; then
+    md5=$(md5sum "$file" | awk '{print $1}')
+    if grep -q "$md5" "$blacklist_file"; then
         echo "File $file is blacklisted. Removing..."
-        rm $file
+        rm "$file"
     fi
 
     # Check if it already exits in wallpaper_dir.
-    if [ -f "${wallpaper_dir}/$(basename $file)" ]; then
+    if [ -f "${wallpaper_dir}/$(basename "$file")" ]; then
         echo "File $file already exists in ${wallpaper_dir}. Removing..."
         rm "$file"
     fi
 done
 
 # Check if the directory has any files in it.
-if [ -z "$(ls -A $src_path)" ]; then
+if [ -z "$(ls -A "$src_path")" ]; then
     echo "No new files to move."
     exit 0
 fi

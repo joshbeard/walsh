@@ -58,7 +58,7 @@ add_to_blacklist() {
         md5sum=$(ssh "$remote_host" "md5sum $remote_path/$image" | awk '{print $1}')
     fi
 
-    echo "$(md5sum ${wallpaper_dir}/${image} | awk '{print $1}')::$image" >> "$blacklist_file"
+    echo "$(md5sum "${wallpaper_dir}/${image}" | awk '{print $1}')::$image" >> "$blacklist_file"
 
     if [ -z "$remote" ]; then
         rm -f "$image"
