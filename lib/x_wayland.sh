@@ -33,5 +33,6 @@ get_monitors() {
 get_current_wallpaper() {
     display="$1"
     query=$(swww query | head -n "$display" | tail -n 1)
-    echo "$query" | awk -F 'image: ' '{print $2}'
+    full=$(echo "$query" | awk -F 'image: ' '{print $2}')
+    echo $(basename "$full")
 }
