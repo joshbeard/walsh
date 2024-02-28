@@ -48,17 +48,24 @@ _walls_completion() {
                 '2:the display with the wallpaper (digit)'
             ;;
         list)
-            _arguments \
-                '-v[Verbose output]' \
-                '-h[Display help message]' \
-                '2:list:->lists'
-            if [[ $state == lists ]]; then
-                local list_dir="$HOME/.local/share/wallpaper/var/lists"
-                local -a list_files
-                list_files=($list_dir/*(.:t:r))
+            local -a listsubcmds=(
+                'cat:List wallpapers in a list'
+                'view:View the wallpaper set'
+            )
 
-                _describe 'lists' list_files
-            fi
+            _arguments '2: :->listsubcmds'
+
+            # _arguments \
+            #     '-v[Verbose output]' \
+            #     '-h[Display help message]' \
+            #     '2:list:->lists'
+            # if [[ $state == lists ]]; then
+            #     local list_dir="$HOME/.local/share/wallpaper/var/lists"
+            #     local -a list_files
+            #     list_files=($list_dir/*(.:t:r))
+            #
+            #     _describe 'lists' list_files
+            # fi
             ;;
         view)
             _arguments '2:display'

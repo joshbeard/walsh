@@ -11,6 +11,12 @@ export required_commands=("swww" "hyprctl")
 #   display: The display to set the wallpaper for
 #   img: The image to set as wallpaper
 set_wallpaper() {
+    display="$1"
+    img="$2"
+    if [ -z "$display" ]; then
+        log_error "No display specified"
+        exit
+    fi
     set_wallpaper_cmd=$(echo "$wayland_set_wallpaper_cmd" | sed "s|{{DISPLAY}}|$display|g" | sed "s|{{IMAGE}}|$img|g")
     log_debug "Running command: $set_wallpaper_cmd"
     eval "$set_wallpaper_cmd" || return 1
@@ -18,7 +24,7 @@ set_wallpaper() {
 
 # Function to get the list of monitors
 get_monitors() {
-    echo hyprctl monitors | grep "^Monitor"
+    hyprctl monitors | grep "^Monitor"
 }
 
 # Function to get the current wallpaper

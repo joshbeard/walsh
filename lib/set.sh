@@ -113,8 +113,7 @@ get_images() {
             remote_path=$(echo "$remote_url" | cut -d: -f2-)
             # Get the images from the remote directory
             log_info "Getting images from $remote_host:$remote_path"
-            ssh "$remote_host" "find \"$remote_path\" -maxdepth 1 -type f -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png'"
-            if [ $? -ne 0 ]; then
+            if ! ssh "$remote_host" "find \"$remote_path\" -maxdepth 1 -type f -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png'"; then
                 log_error "Error getting images from $remote_host:$remote_path"
                 exit 1
             fi
@@ -170,8 +169,7 @@ get_remote_wallpaper() {
     log_info "Getting image ${img_name} from $remote_host:$img"
     # Get the images from the remote directory
     # log_info "Getting images from $remote_host:$remote_path"
-    scp "$remote_host:$img" "$var_dir/remote/$img_name"
-    if [ $? -ne 0 ]; then
+    if ! scp "$remote_host:$img" "$var_dir/remote/$img_name"; then
         log_error "Error getting image from $remote_host:$remote_path/$img"
         exit 1
     fi
@@ -180,21 +178,31 @@ get_remote_wallpaper() {
 
 while true; do
     monitors=$(get_monitors)
+    echo "monitors: $monitors"
     log_debug "found monitors: $monitors"
 
     images=$(get_images)
     log_debug "found $(echo "$images" | wc -l) images"
 
     IFS=$'\n'
-    displaynum=0
+    displayid=0
 
-    for _ in $monitors; do
+    for m in $monitors; do
         img=""
         img_basename=""
 
-        if [ "$display_flag" = true ] && [ "$displaynum" != "$display" ]; then
-            log_debug "Skipping display $displaynum ($display)"
-            displaynum=$((displaynum+1))
+        if [ "$XDG_SESSION_TYPE" != "x11" ]; then
+            displayid=$(get_display_name "$m")
+            if [ -z "$displayid" ]; then
+                log_error "No display name found for $m"
+                exit 1
+            fi
+            # displayid="$displayid"
+        fi
+
+        if [ "$display_flag" = true ] && [ "$displayid" != "$display" ]; then
+            log_debug "Skipping display $displayid ($display)"
+            displayid=$((displaynum+1))
             continue
         fi
 
@@ -228,8 +236,8 @@ while true; do
                 img_path="${wallpaper_dir}/${img_basename}"
             fi
 
-            echo "Setting display $displaynum to: $img_path"
-            set_wallpaper "$displaynum" "$img_path" && break
+            echo "Setting display $displayid to: $img_path"
+            set_wallpaper "$displayid" "$img_path" && break
             sleep 1
         done
 
@@ -237,18 +245,21 @@ while true; do
             add_to_track_file "$img_basename"
         fi
 
-        update_current_info "$displaynum" "$img_basename"
-        log_info "Display $displaynum set to: $img_basename"
-        displaynum=$((displaynum+1))
+        update_current_info "$displayid" "$img_basename"
+        log_info "Display $displayid set to: $img_basename"
+
+        if [ "$XDG_SESSION_TYPE" == "x11" ]; then
+            displaynum=$((displaynum+1))
+        fi
     done
 
     # Remote stale images from $var_dir/remote - images that aren't currently set.
     if [ -n "$remote" ]; then
         log_debug "Removing stale images from $var_dir/remote"
-        for img in $(ls "$var_dir/remote"); do
-            if ! grep -q "$img" "$currently_set_file"; then
+        for img in $var_dir/remote/*; do
+            if ! grep -q $(basename "$img") "$currently_set_file"; then
                 log_debug "Removing stale image $img"
-                rm "$var_dir/remote/$img"
+                rm "$img"
             fi
         done
     fi

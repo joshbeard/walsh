@@ -77,8 +77,8 @@ subcommand="$1"
 shift
 
 # Parse options
-while getopts ":vh-:" opts; do
-    case "$opts" in
+for opts in "$@"; do
+    case "${opts}" in
         -v|--verbose)
             verbose=true
             shift

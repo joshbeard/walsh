@@ -21,8 +21,8 @@ if [ "$#" -eq 0 ] || [ "$1" == "-h" ] || [ "$1" == "--help" ]; then
     usage
 fi
 
-images="$@"
-last_arg="${@: -1}"
+images="$*"
+last_arg="${*: -1}"
 list_name="$last_arg"
 
 # If a display is specified, get the wallpaper that's currently set on that
@@ -54,6 +54,7 @@ add_to_blacklist() {
     echo "$(md5sum "${wallpaper_dir}/${image}" | awk '{print $1}')::$image" >> "$blacklist_file"
 
     if [ -z "$remote" ]; then
+        echo "Removing $image from wallpaper directory"
         rm -f "$image"
     fi
 }
