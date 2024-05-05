@@ -12,7 +12,7 @@ source "$HOME/.local/share/wallpaper/etc/wallpaper.cfg"
 source "$HOME/.local/share/wallpaper/lib/common.sh"
 
 # Initialize flags and variables
-once_flag=false
+once_flag="false"
 display_flag=false
 display= # Default display value
 list=""
@@ -34,11 +34,13 @@ usage() {
     exit 0
 }
 
+log_debug "Arguments: $@"
+
 # Process command line arguments
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --once)
-            once_flag=true
+            once_flag="true"
             shift
             ;;
         --interval)
@@ -121,6 +123,13 @@ get_images() {
           find "$wallpaper_dir" -maxdepth 1 -type f -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png'
         fi
     fi
+
+    # Remove blacklisted images from the list
+    if [ -f "$blacklist_file" ]; then
+        for img in $(cat "$blacklist_file" | awk -F '::' '{print $2}'); do
+            images=$(echo "$images" | grep -v "$img")
+        done
+    fi
 }
 
 get_random_image() {
@@ -133,6 +142,8 @@ update_current_info() {
     local display="$1"
     local new_img="$2"
     local img_basename=$(basename "$new_img")
+
+  echo "Updating current info for display $display"
 
     if [ ! -e "$currently_set_file" ]; then
         touch "$currently_set_file"
@@ -176,9 +187,21 @@ get_remote_wallpaper() {
     img="$var_dir/remote/$img_name"
 }
 
+# Test SSH connection if remote is set
+# Capture the SSH connection output and log it if it fails
+if [ -n "$remote" ]; then
+    remote_url=$(echo "$remote" | sed -e 's|^[^:]*://||')
+    remote_host=$(echo "$remote_url" | cut -d: -f1)
+    log_debug "Testing SSH connection to $remote_host"
+    test_ssh=$(ssh -v -o BatchMode=yes -o ConnectTimeout=5 "$remote_host" echo "SSH connection test" 2>&1)
+    if [ $? -ne 0 ]; then
+        log_error "Error connecting to $remote_host: $test_ssh"
+        exit 1
+    fi
+fi
+
 while true; do
     monitors=$(get_monitors)
-    echo "monitors: $monitors"
     log_debug "found monitors: $monitors"
 
     images=$(get_images)
@@ -186,19 +209,12 @@ while true; do
 
     IFS=$'\n'
     displayid=0
+    displayname=0
 
     for m in $monitors; do
+        displayname=$(get_monitor_name "$m")
         img=""
         img_basename=""
-
-        if [ "$XDG_SESSION_TYPE" != "x11" ]; then
-            displayid=$(get_display_name "$m")
-            if [ -z "$displayid" ]; then
-                log_error "No display name found for $m"
-                exit 1
-            fi
-            # displayid="$displayid"
-        fi
 
         if [ "$display_flag" = true ] && [ "$displayid" != "$display" ]; then
             log_debug "Skipping display $displayid ($display)"
@@ -237,7 +253,7 @@ while true; do
             fi
 
             echo "Setting display $displayid to: $img_path"
-            set_wallpaper "$displayid" "$img_path" && break
+            set_wallpaper "$displayname" "$img_path" && break
             sleep 1
         done
 
@@ -248,9 +264,7 @@ while true; do
         update_current_info "$displayid" "$img_basename"
         log_info "Display $displayid set to: $img_basename"
 
-        if [ "$XDG_SESSION_TYPE" == "x11" ]; then
-            displaynum=$((displaynum+1))
-        fi
+        displayid=$((displayid+1))
     done
 
     # Remote stale images from $var_dir/remote - images that aren't currently set.
@@ -264,7 +278,7 @@ while true; do
         done
     fi
 
-    if [ "$once_flag" = true ]; then
+    if [ "$once_flag" == "true" ]; then
         log_debug "Exiting because --once flag was set"
         break
     fi

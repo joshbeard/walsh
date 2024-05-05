@@ -21,7 +21,12 @@ if [ -z "$current" ]; then
     exit 1
 fi
 
+img_path="${wallpaper_dir}/${current}"
+if [ -n "$remote" ]; then
+  img_path="${var_dir}/remote/${current}"
+fi
+
 # Replace {{IMAGE}} with the image path in the viewer_cmd
-viewer_cmd=$(echo "$viewer_cmd" | sed "s|{{IMAGE}}|${wallpaper_dir}/${current}|g")
+viewer_cmd=$(echo "$viewer_cmd" | sed "s|{{IMAGE}}|${img_path}|g")
 echo "Current wallpaper: $current"
-$viewer_cmd "${wallpaper_dir}/${current}"
+$viewer_cmd "${img_path}" &

@@ -18,20 +18,27 @@ set_wallpaper() {
         exit
     fi
     set_wallpaper_cmd=$(echo "$wayland_set_wallpaper_cmd" | sed "s|{{DISPLAY}}|$display|g" | sed "s|{{IMAGE}}|$img|g")
-    log_debug "Running command: $set_wallpaper_cmd"
-    eval "$set_wallpaper_cmd" || return 1
+    log_debug "Running command: $set_wallpaper_cmd with debug"
+    (eval "$set_wallpaper_cmd" | logger -t wallpaper) || log_error "Failed to set wallpaper for display $display"
 }
 
 # Function to get the list of monitors
 get_monitors() {
-    hyprctl monitors | grep "^Monitor"
+    hyprctl monitors | grep "^Monitor" | grep -oP "ID \K\d+"
+}
+
+# For a given digit, match it to the ID from "get_monitors" and
+# return the monitor name.
+get_monitor_name() {
+  local digit="$1"
+  hyprctl monitors | grep -P "ID $digit" | awk '{print $2}'
 }
 
 # Function to get the current wallpaper
 # Arguments:
 #   display: The display to get the wallpaper for
 get_current_wallpaper() {
-    display="$1"
+    display=$((display + 1))
     query=$(swww query | head -n "$display" | tail -n 1)
     full=$(echo "$query" | awk -F 'image: ' '{print $2}')
     echo $(basename "$full")

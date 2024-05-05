@@ -27,6 +27,12 @@ get_monitors() {
     echo "$mons"
 }
 
+# This doesn't do anything on xorg, but is here to satisfy the
+# interface.
+get_monitor_name() {
+  echo "$1"
+}
+
 # Function to get the current wallpaper
 # Arguments:
 #   display: The display to get the wallpaper for

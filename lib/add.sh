@@ -24,6 +24,7 @@ fi
 images="$*"
 last_arg="${*: -1}"
 list_name="$last_arg"
+display=""
 
 # If a display is specified, get the wallpaper that's currently set on that
 # display.
@@ -37,8 +38,6 @@ if [[ "$1" =~ ^[0-9]+$ ]]; then
         echo "No wallpaper set on display $display"
         exit
     fi
-
-    blacklist_post_run_cmd="${blacklist_post_run_cmd} -d $display"
 
     images="$wallpaper"
 fi
@@ -90,8 +89,10 @@ for image in $images; do
 done
 
 if [ "$list_name" == "blacklist" ]; then
+    # Replace {{DISPLAY}} with the display number and {{IMAGE}} with the image.
+    post_run_cmd=$(echo "$blacklist_post_run_cmd" | sed "s|{{DISPLAY}}|$display|g" | sed "s|{{IMAGE}}|$image|g")
     if [ -n "$blacklist_post_run_cmd" ]; then
-        log_debug "Running blacklist_post_run_cmd: $blacklist_post_run_cmd"
-        eval "$blacklist_post_run_cmd"
+        log_debug "Running blacklist_post_run_cmd: $post_run_cmd"
+        eval "$post_run_cmd"
     fi
 fi
