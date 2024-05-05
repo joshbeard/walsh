@@ -31,7 +31,7 @@ case $cmd in
         ;;
     set)
         shift
-        "$libdir/set.sh" --once $@
+        "$libdir/set.sh" $@
         ;;
     start)
         shift
