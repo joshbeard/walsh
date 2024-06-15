@@ -89,9 +89,11 @@ for image in $images; do
 done
 
 if [ "$list_name" == "blacklist" ]; then
+    echo "Blacklist updated"
     # Replace {{DISPLAY}} with the display number and {{IMAGE}} with the image.
     post_run_cmd=$(echo "$blacklist_post_run_cmd" | sed "s|{{DISPLAY}}|$display|g" | sed "s|{{IMAGE}}|$image|g")
     if [ -n "$blacklist_post_run_cmd" ]; then
+        echo "Running blacklist_post_run_cmd: $post_run_cmd"
         log_debug "Running blacklist_post_run_cmd: $post_run_cmd"
         eval "$post_run_cmd"
     fi

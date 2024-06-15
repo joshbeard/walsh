@@ -100,11 +100,6 @@ if [[ -z "$wallpaper_dir" ]]; then
     exit 1
 fi
 
-get_display_name() {
-    segment=$(echo "$1" | grep -o "Monitor \([^ ]*\)" | awk '{print $2}')
-    echo "$segment"
-}
-
 get_images() {
     if [ -n "$list" ]; then
         cat "${lists_dir}/${list}.txt"
@@ -217,8 +212,9 @@ while true; do
         img_basename=""
 
         if [ "$display_flag" = true ] && [ "$displayid" != "$display" ]; then
+            echo "Skipping display $displayid ($display)"
             log_debug "Skipping display $displayid ($display)"
-            displayid=$((displaynum+1))
+            displayid=$((displayid+1))
             continue
         fi
 
@@ -286,5 +282,3 @@ while true; do
     echo "Sleeping for $interval seconds"
     sleep "$interval"
 done
-
-
