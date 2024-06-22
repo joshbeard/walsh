@@ -1,16 +1,35 @@
-# Josh's Wallpaper Scripts
+# walsh
 
-[![Codacy Badge](https://app.codacy.com/project/badge/Grade/9eaa523a3f7d442796216da3209cd46b)](https://app.codacy.com/gh/joshbeard/walls.sh/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
+Josh's wallpaper tool
 
-Scripts for managing desktop wallpapers.
+This is a simple wallpaper manager for randomizing images on multiple displays
+from different sources, saving images to lists, blacklisting images, and more.
+It's a personal tool that fits my needs by wrapping other tools to do the real
+work.
+
+It supports a variety of desktop environments.
 
 <img align="right" width="256" height="256" src=".doc/image.jpg">
 
-They're currently somewhat specific to my Linux desktop (arch btw) and depend
-on:
+It's evolved from a couple of simple shell scripts, to a single more intuitive
+script, and now a Go program. It's really just a wrapper, though.
+
+## Features
+
+* Download wallpapers from Bing and Unsplash using
+  [gosimac](https://github.com/1995parham/gosimac)
+* Randomly set a wallpaper per display
+* Set wallpapers on demand, per-display
+* Add wallpapers to a list and set from a list
+* Track recent wallpapers and avoid setting them for a while
+* Blacklist wallpapers
+* Source images from remote server over SSH
+* Supports Xorg, Wayland, macOS
+
+## Dependencies
 
 * [gosimac](https://github.com/1995parham/gosimac) for downloading wallpapers
-  from Bing and Usplash (e.g. via cron).
+  from Bing and Usplash (e.g. via cron). Only needed if `download` is used.
 * on xorg: `xrandr` and [nitrogen](https://wiki.archlinux.org/title/Nitrogen)
 * on wayland: hyprland and [swww](https://github.com/Horus645/swww) (hyprland's
   `hyprctl` command is used, but this will be changed to something more generic
@@ -20,156 +39,167 @@ The result is random wallpapers across all connected displays, sourced from
 thousands of random images at a regular interval that I can add to lists
 whether running on Xorg or Wayland.
 
-## Features
-
-* Download wallpapers from Bing and Unsplash
-* Randomly set a wallpaper per display
-* Set wallpapers on demand, per-display
-* Add wallpapers to a list and set from a list
-* Track recent wallpapers and avoid setting them for a while
-* Blacklist wallpapers
-* Source images from remote server over SSH
-* Supports Xorg and Wayland
-
-## Install
-
-* Install pre-requisite packages
-    These are easy to change, but requires modifying the default config and
-    possibly some of the wrapper code. See [`lib/x_xorg.sh`](lib/x_xorg.sh)
-    and [`lib/x_wayland.sh`](lib/x_wayland.sh).
-
-    On Arch with Xorg:
-
-    ```shell
-    yay -S nitrogen feh gosimac
-    ```
-
-    On Arch with Hyprland (Wayland):
-
-    ```shell
-    yay -S hyprland swww feh
-    ```
-
-* Clone to `$HOME/.local/share/wallpaper` (or somewhere)
-* Modify the [config file](etc/wallpaper.cfg)
-* Export the `bin` directory in `$PATH`
 
 ## Usage
 
-```plain
-walls.sh - Manage wallpaper images on X and Wayland
-
-Download, set, randomize, blacklist and add wallpapers to lists.
-
-Usage: walls.sh SUBCOMMAND [SUBCOMMAND OPTIONS]
-
-Subcommands:
-  help      - Show this help message.
-  set       - Set wallpaper(s) and exit.
-  start     - Start the wallpaper randomizer.
-  blacklist - Blacklist the current wallpaper.
-  download  - Download wallpapers.
-  add       - Add a wallpaper to a list.
-  list      - List wallpapers.
-  view      - View the wallpaper set.
+```shell
+walsh [command] [flags]
 ```
 
-### Help
+See `walsh help` for more information.
 
-See help for the root command and subcommands with the `--help` argument:
+If you run `walsh` without any arguments, it defaults to the `set` command and
+will set a random wallpaper on each display.
+
+### Set Wallpaper
+
+Set a random wallpaper on each display using the configured sources:
 
 ```shell
-walls.sh --help
-walls.sh add --help
-walls.sh blacklist --help
-walls.sh download --help
-walls.sh list --help
-walls.sh set --help
-walls.sh start --help
-walls.sh view --help
+walsh set
 ```
 
-### Setting Wallpaper
+_`s` is an alias for `set`._
 
-Randomize wallpapers across all detected displays and exit:
+Set a random wallpaper on a specific display:
 
 ```shell
-walls.sh set
+walsh set -d 1
 ```
-Set a random wallpaper on all displays and exit:
+
+_You can also omit the `-d` flag and specify a number without it._
 
 ```shell
-walls.sh set --once
+walsh s 1
 ```
 
-Set a wallpaper on display 2 and exit:
+Set a random wallpaper from a specific list:
 
 ```shell
-walls.sh set -d 2 --once
+walsh set -l my-list
 ```
 
-Set wallpapers at an interval:
+Set a random wallpaper from a directory:
 
 ```shell
-walls.sh set --interval 600
+walsh set ~/Pictures/wallpapers
 ```
 
-### Using Lists
-
-Save the current wallpaper on display 1 to a list called "nature":
+Set a specific wallpaper on each display:
 
 ```shell
-walls.sh add 1 nature
+walsh set ~/Pictures/wallpapers/wallpaper.jpg
 ```
 
-Set a wallpaper from a list:
+Set a specific wallpaper on a specific display:
 
 ```shell
-walls.sh set -d 2 --once --list nature
+walsh set -d 1 ~/Pictures/wallpapers/wallpaper.jpg
 ```
 
-View lists:
+Set a random wallpaper from an SSH source:
 
 ```shell
-walls.sh list         # view a list of lists
-walls.sh list nature  # view the files in the 'nature' list
+walsh set ssh://user@host/path/to/wallpapers
 ```
 
-### Blacklisting
+### View Wallpaper
 
-Since this downloads a bunch of random images from the Internet, it may be
-necessary to 'blacklist' an image to prevent it from being used as a wallpaper
-in the future. It won't prevent its download, but it'll be deleted immediately
-and if it is downloaded again.
+View the current wallpaper on each display:
 
 ```shell
-walls.sh blacklist 0  # blacklist the wallpaper on display 0
+walsh view
 ```
 
-### Downloading
+View the current wallpaper on a specific display:
 
 ```shell
-walls.sh download
+walsh view -d 1
 ```
 
-### Viewing
+### Blacklist
+
+Blacklist the current wallpaper on a specific display:
 
 ```shell
-walls.sh view 0
+walsh bl -d 1
 ```
 
-### Remote Source
-
-Set the `remote` config option:
 
 ```shell
-remote="ssh://foo.bar:/path/to/wallpapers
+walsh bl 1
 ```
 
-The images will get cached to `${walls_var_dir}/remote`.
+## Configuration
+
+Standard XDG configuration directories are used for configuration files.
+
+The default configuration file is `${XDG_CONFIG_HOME}/walsh/config.yml`
+(e.g. `~/.config/walsh/config.yaml`) and will be created if it does not exist.
+
+The default configuration is as follows:
+
+```yaml
+sources: []
+current: ${XDG_DATA_HOME}/walsh/current.json
+blacklist: ${XDG_CONFIG_HOME}/walsh/blacklist.json
+history: ${XDG_DATA_HOME}/walsh/history.json
+lists_dir: ${XDG_DATA_HOME}/walsh/lists
+tmp_dir: ${XDG_CACHE_HOME}/walsh
+history_size: 50
+cache_size: 50
+interval: 0
+```
+
+For example:
+
+```yaml
+sources: []
+current: /home/user/.local/share/walsh/current.json
+blacklist: /home/user/.config/walsh/blacklist.json
+history: /home/user/.local/share/walsh/history.json
+lists_dir: /home/user/.local/share/walsh/lists
+tmp_dir: /home/user/.cache/walsh
+history_size: 50
+cache_size: 50
+interval: 0
+```
+
+
+### Sources
+
+Sources is a list of directories or URIs to source images from. Directories
+are absolute paths to directories on the local filesystem. Alternatively, an
+SSH URI can be used to source images from a remote directory.
+
+```yaml
+sources:
+  - /home/user/Pictures/wallpapers
+  - ssh://user@host/path/to/wallpapers
+```
 
 To use a remote source in a crontab, make sure SSH is configured correct. E.g.
 
 ```plain
 */10 * * * * pgrep XORG && DISPLAY=:0 XDG_SESSION_TYPE=x11 SSH_AUTH_SOCK=/path/to/ssh_agent nice -n 19 walls.sh set --once
 ```
+
+### Lists Directory
+
+Lists directory is the directory where lists of wallpapers are stored. Lists
+are plain text files with one image path per line.
+
+### Blacklist File
+
+Blacklist file is a plain text file with one image path per line. Images in
+the blacklist will not be set as wallpapers.
+
+### History File
+
+History file is a plain text file with one image path per line. Images in the
+history file will not be set as wallpapers until all other images have been
+set.
+
+### Current File
+
+Current file is a JSON file that tracks the currently set wallpaper.
