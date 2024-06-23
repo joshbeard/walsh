@@ -1,0 +1,74 @@
+project_name: walsh
+before:
+  hooks:
+    - go mod tidy
+builds:
+  - id: "walsh"
+    env:
+      - CGO_ENABLED=0
+    mod_timestamp: "{{ .CommitTimestamp }}"
+    flags:
+      - -trimpath
+    ldflags:
+      - "-s -w -X main.version={{.Version}}"
+    goos:
+      - linux
+      - darwin
+      - freebsd
+    goarch:
+      - amd64
+      - arm64
+    main: .
+    binary: walsh
+archives:
+  - id: "tarball"
+    builds:
+      - "walsh"
+    format: tar.gz
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    format_overrides:
+      - goos: windows
+        format: zip
+    files: []
+    #   - src: LICENSE
+    #   - src: README.md
+snapshot:
+  name_template: "{{ .Tag }}-next"
+checksum:
+  name_template: 'checksums.txt'
+signs:
+  - artifacts: all
+    args:
+      - "--batch"
+      - "--local-user"
+      - "{{ .Env.GPG_FINGERPRINT }}"
+      - "--output"
+      - "${signature}"
+      - "--detach-sign"
+      - "${artifact}"
+nfpms:
+  - id: 'pkgs'
+    vendor: "Josh Beard"
+    maintainer: "Josh Beard <josh@jbeard.dev>"
+    homepage: "http://github.com/joshbeard/walsh"
+    license: "0BSD"
+    description: "Manage wallpapers"
+    #prerelease: beta1
+    release: "1"
+    priority: "extra"
+    section: vcs
+    formats:
+      - apk
+      - deb
+      - rpm
+      - archlinux
+    rpm:
+      signature:
+        key_file: key.gpg
+    deb:
+      signature:
+        key_file: key.gpg
+    # FIXME: gpg signing apk
+    apk: {}
+    archlinux:
+      packager: Josh Beard <josh@jbeard.dev>
