@@ -36,7 +36,7 @@ type Session struct {
 type SessionProvider interface {
 	SetWallpaper(path string, display Display) error
 	GetDisplays() ([]Display, error)
-	GetCurrentWallpaper(display Display) (string, error)
+	GetCurrentWallpaper(display, current Display) (string, error)
 }
 
 // CurrentWallpaper is a helper struct for representing the current wallpaper
@@ -90,6 +90,10 @@ func NewSession(cfg *config.Config) *Session {
 	switch sessType {
 	case DesktopTypeHyprland:
 		svc = &hyprland{}
+	case SessionTypeX11Unknown:
+		svc = &xorg{}
+	case SessionTypeMacOS:
+		svc = &macos{}
 	default:
 		log.Warnf("Unknown session type: %d", sessType)
 		return nil
@@ -236,8 +240,6 @@ func (s Session) filterImages(images []source.Image, list []source.Image) []sour
 	for _, i := range images {
 		if !source.ImageInList(i, list) {
 			filtered = append(filtered, i)
-		} else {
-			log.Debugf("excluding image %s", i.Path)
 		}
 	}
 
@@ -350,12 +352,31 @@ func (s Session) GetCurrentWallpaper(display string) (string, error) {
 		return "", err
 	}
 
-	return s.svc.GetCurrentWallpaper(d)
+	currentFile, err := s.ReadCurrent()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	currentDisplay, err := currentFile.Display(display)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return s.svc.GetCurrentWallpaper(d, currentDisplay)
 }
 
 // View opens an image in the default image viewer.
 func (s Session) View(image string) error {
 	log.Debugf("Viewing %s", image)
+
+	if isMacOS() {
+		_, err := util.RunCmd(fmt.Sprintf("open -a Preview '%s'", image))
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}
 
 	_, err := util.RunCmd(fmt.Sprintf("eog '%s'", image))
 	if err != nil {

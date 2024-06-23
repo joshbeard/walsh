@@ -5,6 +5,7 @@ package session
 import (
 	"strings"
 
+	"github.com/charmbracelet/log"
 	"github.com/joshbeard/walsh/internal/util"
 )
 
@@ -34,11 +35,14 @@ func (x xorg) SetWallpaper(path string, display Display) error {
 }
 
 func (x xorg) GetDisplays() ([]Display, error) {
-	cmd := `xrandr --listactivemonitors | grep "^ " | awk '{print $1}'`
+	cmd := `xrandr --listactivemonitors | grep "^ " | awk '{print $1}' | cut -d':' -f1`
 	results, err := util.RunCmd(cmd)
 	if err != nil {
 		return nil, err
 	}
+
+	// Trim any leading/trailing whitespace
+	results = strings.TrimSpace(results)
 
 	// Results in slice by splitting on newline
 	lines := strings.Split(results, "\n")
@@ -48,9 +52,11 @@ func (x xorg) GetDisplays() ([]Display, error) {
 		displays = append(displays, Display{Name: line})
 	}
 
+	log.Debugf("Found displays: %v", displays)
+
 	return displays, nil
 }
 
-func (x xorg) GetCurrentWallpaper(display Display) (string, error) {
-	return "", nil
+func (x xorg) GetCurrentWallpaper(display, current Display) (string, error) {
+	return current.Current.Path, nil
 }

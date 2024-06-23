@@ -48,7 +48,7 @@ func (h hyprland) GetDisplays() ([]Display, error) {
 // GetCurrentWallpaper returns the current wallpaper for the specified display
 // in a Hyprland session. This uses the `swww query` command to get the current
 // wallpaper.
-func (h hyprland) GetCurrentWallpaper(display Display) (string, error) {
+func (h hyprland) GetCurrentWallpaper(display, _ Display) (string, error) {
 	result, err := util.RunCmd("swww query")
 	if err != nil {
 		return "", fmt.Errorf("failed to query swww: %w", err)
