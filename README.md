@@ -39,6 +39,35 @@ The result is random wallpapers across all connected displays, sourced from
 thousands of random images at a regular interval that I can add to lists
 whether running on Xorg or Wayland.
 
+## Installation
+
+To download and install the latest version of walsh using `curl` and piping it
+to the shell, run the following command:
+
+```sh
+curl -sfL https://raw.githubusercontent.com/joshbeard/walsh/master/install.sh | sh -
+```
+
+If you want to specify a custom installation directory, you can set the
+`INSTALL_DIR` environment variable or pass the `-d` (or `--dir`) argument. For
+example:
+
+```sh
+# Using INSTALL_DIR environment variable
+INSTALL_DIR=/usr/local/bin curl -sfL https://raw.githubusercontent.com/joshbeard/walsh/master/install.sh | sh -
+
+# Using -d (or --dir) argument
+curl -sfL https://raw.githubusercontent.com/joshbeard/walsh/master/install.sh | sh -s -- -d /usr/local/bin
+```
+
+The script will:
+- Detect your OS and architecture.
+- Download the latest release of walsh from GitHub.
+- Verify the checksum of the downloaded package.
+- Extract the binary and move it to the specified directory (default is `$HOME/bin`).
+
+Make sure the installation directory is in your `PATH` so you can easily run
+`walsh` from anywhere.
 
 ## Usage
 
