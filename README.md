@@ -46,6 +46,9 @@ Hyprland and Sway have been tested and are known to work, using `hyprctl` and
   * [xwallpaper](https://github.com/stoeckmann/xwallpaper)
   * [xsetbg](https://linux.die.net/man/1/xsetbg)
 
+### macOS
+
+No specific dependencies are required for macOS.
 
 ### Download from Bing and Unsplash
 
@@ -234,7 +237,12 @@ sources:
   - ssh://user@host/path/to/wallpapers
 ```
 
-### Desktop Environments
+### Desktop Environment Integration
+
+Run `walsh` however you like to set wallpapers. On Linux/BSD desktops, it's
+preferred to use the startup configuration of your desktop environment to run
+`walsh` at login. You can also use something like cron, systemd, or a launchd
+agent to run `walsh` at regular intervals. Or just run it on demand.
 
 If using an SSH source, you will need to ensure your SSH agent is running and
 the `SSH_AUTH_SOCK` environment variable is set. This is necessary for the
