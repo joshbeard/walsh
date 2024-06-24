@@ -169,12 +169,26 @@ func processDownloads(sess *session.Session, dest string) int {
 
 		processed++
 
-		log.Debugf("Moving %s to %s", img.Path, dest)
-		target := filepath.Join(dest, filepath.Base(img.Path))
-		if err := os.Rename(img.Path, target); err != nil {
+		if err := moveImage(img, dest); err != nil {
 			log.Errorf("Error moving file: %s", err)
+			continue
 		}
 	}
 
 	return processed
+}
+
+func moveImage(src source.Image, dest string) error {
+	if strings.HasPrefix(dest, source.SourceSSH.String()) {
+		return source.UploadSSHImage(src, dest)
+	}
+
+	// Move the file
+	log.Debugf("Moving %s to %s", src.Path, dest)
+	target := filepath.Join(dest, filepath.Base(src.Path))
+	if err := os.Rename(src.Path, target); err != nil {
+		return fmt.Errorf("failed to move file: %w", err)
+	}
+
+	return nil
 }

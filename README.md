@@ -215,8 +215,9 @@ cache_size: 50
 # The interval in seconds to set a new wallpaper. Set to 0 to disable.
 interval: 0
 
-# A destination path to download images to. This is used by the 'download'
-# command.
+# A destination path or URI to download images to. This is used by the
+# 'download' # command.
+# Specify a path with optional environment variables or an SSH URI.
 download_dest: ${XDG_HOME}/Pictures/Wallpapers
 ```
 
@@ -230,13 +231,15 @@ download_dest: ${XDG_HOME}/Pictures/Wallpapers
 ### Sources
 
 Sources is a list of directories or URIs to source images from. Directories
-are absolute paths to directories on the local filesystem. Alternatively, an
-SSH URI can be used to source images from a remote directory.
+are absolute or relative paths to directories on the local filesystem and can
+use environment variables (e.g. `${HOME}/Pictures/Wallpapers`).
+Alternatively, an SSH URI can be used to source images from a remote directory.
 
 ```yaml
 sources:
   - /home/user/Pictures/wallpapers
-  - ssh://user@host/path/to/wallpapers
+  - ssh://user@host:/path/to/wallpapers
+  - ssh://myhost:/path/to/wallpapers
 ```
 
 ### Desktop Environment Integration
