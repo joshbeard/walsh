@@ -106,7 +106,7 @@ func Random(images []Image, tmpDir string) (Image, error) {
 	image := images[randomIndex]
 	if strings.HasPrefix(image.Source, SourceSSH.String()) {
 		// Create tmpDir if it doesn't exist.
-		if _, err := os.Stat(tmpDir); os.IsNotExist(err) {
+		if !util.FileExists(tmpDir) {
 			err = os.Mkdir(tmpDir, 0700)
 			if err != nil {
 				return Image{}, fmt.Errorf("failed to create temporary directory: %w", err)
@@ -159,7 +159,6 @@ func getDirImages(src string) ([]Image, error) {
 	var images []Image
 	for _, entry := range entries {
 		if !entry.IsDir() {
-			// Check if the file has a valid image extension.
 			if isImageFile(entry.Name()) {
 				checksum, err := util.Sha256(filepath.Join(dirPath, entry.Name()))
 				if err != nil {
@@ -171,7 +170,6 @@ func getDirImages(src string) ([]Image, error) {
 					Path:   filepath.Join(dirPath, entry.Name()),
 					ShaSum: checksum,
 				})
-				//filepath.Join(dirPath, entry.Name()))
 			}
 		}
 	}

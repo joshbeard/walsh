@@ -109,7 +109,6 @@ func createNewConfig(path string) (*Config, error) {
 }
 
 func (c Config) createDirs() error {
-	// Create the xdg.DataHome directory if it doesn't exist
 	if !util.FileExists(xdg.DataHome) {
 		err := util.MkDir(xdg.DataHome)
 		if err != nil {
@@ -117,7 +116,6 @@ func (c Config) createDirs() error {
 		}
 	}
 
-	// Create the lists directory if it doesn't exist
 	if !util.FileExists(c.ListsDir) {
 		err := util.MkDir(c.ListsDir)
 		if err != nil {

@@ -90,15 +90,6 @@ build: ## Build the binary for the host platform
 install: ## Install the binary
 	go install -ldflags $(LD_FLAGS)
 
-.PHONY: buildall
-buildall: ## Build the binary for all platforms
-	mkdir -p $(DIST_DIR)
-	GOOS=linux GOARCH=amd64 go build -ldflags $(LD_FLAGS) -o $(DIST_DIR)/$(PACKAGE_NAME)-$(VERSION)_linux-amd64 .
-	GOOS=linux GOARCH=arm64 go build -ldflags $(LD_FLAGS) -o $(DIST_DIR)/$(PACKAGE_NAME)-$(VERSION)_linux-arm64 .
-	GOOS=darwin GOARCH=amd64 go build -ldflags $(LD_FLAGS) -o $(DIST_DIR)/$(PACKAGE_NAME)-$(VERSION)_darwin-amd64 .
-	GOOS=darwin GOARCH=arm64 go build -ldflags $(LD_FLAGS) -o $(DIST_DIR)/$(PACKAGE_NAME)-$(VERSION)_darwin-arm64 .
-	GOOS=windows GOARCH=amd64 go build -ldflags $(LD_FLAGS) -o $(DIST_DIR)/$(PACKAGE_NAME)-$(VERSION)_windows-amd64 .
-
 .PHONY: clean
 clean: ## Clean test files
 	rm -f coverage.txt coverage.xml coverage.html checkstyle-report.xml

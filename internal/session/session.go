@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -314,27 +315,25 @@ func detect() (SessionType, error) {
 	xdgCurrentDesktop := os.Getenv("XDG_CURRENT_DESKTOP")
 	xdgSessionType := os.Getenv("XDG_SESSION_TYPE")
 	swaySocket := os.Getenv("SWAYSOCK")
+	isMac := isMacOS()
 
 	switch {
+	case isMac:
+		log.Debugf("Detected macOS session")
+		return SessionTypeMacOS, nil
 	case xdgCurrentDesktop == "Hyprland":
 		log.Debugf("Detected Hyprland desktop")
 		return SessionTypeHyprland, nil
-	case xdgSessionType == "x11":
-		log.Debugf("Detected X11 session")
-		return SessionTypeX11Unknown, nil
 	case xdgSessionType == "wayland" && swaySocket != "":
 		log.Debugf("Detected Sway session")
 		return SessionTypeSway, nil
 	case xdgSessionType == "wayland":
 		log.Debugf("Detected Wayland session")
 		return SessionTypeWayland, nil
+	case xdgSessionType == "x11":
+		log.Debugf("Detected X11 session")
+		return SessionTypeX11Unknown, nil
 	default:
-		isMac := isMacOS()
-		if isMac {
-			log.Debugf("Detected macOS session")
-			return SessionTypeMacOS, nil
-		}
-
 		return SessionTypeUnknown, errors.New("unknown session type")
 	}
 }
@@ -357,7 +356,7 @@ func parseSetCmd(cmd, path, display string) string {
 // found.
 func getSetCmd(l []string, path, display string) (string, error) {
 	for _, cmd := range l {
-		if util.CmdExists(strings.Split(cmd, " ")[0]) {
+		if _, err := exec.LookPath(strings.Split(cmd, " ")[0]); err == nil {
 			cmd = parseSetCmd(cmd, path, display)
 
 			return cmd, nil
@@ -414,19 +413,17 @@ func (s Session) View(image string) error {
 // This only updates the line for the given display, leaving the rest of the
 // file unchanged.
 func (s Session) WriteCurrent(display Display, path source.Image) error {
+	var err error
 	// Update the display's current path
 	display.Current = path
 
 	// Ensure the file exists before reading
-	_, err := os.Stat(s.cfg.CurrentFile)
-	if os.IsNotExist(err) {
+	if !util.FileExists(s.cfg.CurrentFile) {
 		// Create the file if it doesn't exist
 		err = os.WriteFile(s.cfg.CurrentFile, []byte("{}"), 0644)
 		if err != nil {
 			return fmt.Errorf("failed to create the file: %w", err)
 		}
-	} else if err != nil {
-		return fmt.Errorf("failed to stat the file: %w", err)
 	}
 
 	// Read the existing file content
@@ -472,8 +469,7 @@ func (s Session) WriteCurrent(display Display, path source.Image) error {
 
 // ReadCurrent reads the current wallpaper data for the session.
 func (s Session) ReadCurrent() (CurrentWallpaper, error) {
-	_, err := os.Stat(s.cfg.CurrentFile)
-	if os.IsNotExist(err) {
+	if !util.FileExists(s.cfg.CurrentFile) {
 		return CurrentWallpaper{}, nil
 	}
 
@@ -495,8 +491,7 @@ func (s Session) ReadCurrent() (CurrentWallpaper, error) {
 
 // ReadList reads a list of images from a file.
 func (s Session) ReadList(file string) ([]source.Image, error) {
-	_, err := os.Stat(file)
-	if os.IsNotExist(err) {
+	if !util.FileExists(file) {
 		return nil, nil
 	}
 
@@ -594,34 +589,35 @@ func (s Session) TrimHistory() error {
 
 // cleanupTmpDir cleans up the tmp directory by removing old files.
 func (s Session) cleanupTmpDir() error {
-	// Keep the most recent images in the tmp dir (based on s.cfg.CacheSize)
-	if _, err := os.Stat(s.cfg.CacheDir); err == nil {
-		files, err := os.ReadDir(s.cfg.CacheDir)
-		if err != nil {
-			return err
+	if !util.FileExists(s.cfg.CacheDir) {
+		return nil
+	}
+
+	files, err := os.ReadDir(s.cfg.CacheDir)
+	if err != nil {
+		return err
+	}
+
+	if len(files) > s.cfg.CacheSize {
+		// Sort by mod time
+		util.SortFilesByMTime(files)
+
+		// Get the paths of the current wallpapers
+		currentWallpapers := make(map[string]bool)
+		for _, display := range s.displays {
+			currentWallpapers[display.Current.Path] = true
 		}
 
-		if len(files) > s.cfg.CacheSize {
-			// Sort by mod time
-			util.SortFilesByMTime(files)
-
-			// Get the paths of the current wallpapers
-			currentWallpapers := make(map[string]bool)
-			for _, display := range s.displays {
-				currentWallpapers[display.Current.Path] = true
-			}
-
-			// Remove the oldest files that are not current wallpapers
-			removedCount := 0
-			for i := 0; i < len(files) && removedCount < len(files)-s.cfg.CacheSize; i++ {
-				path := filepath.Join(s.cfg.CacheDir, files[i].Name())
-				if !currentWallpapers[path] {
-					err := os.Remove(path)
-					if err != nil {
-						return err
-					}
-					removedCount++
+		// Remove the oldest files that are not current wallpapers
+		removedCount := 0
+		for i := 0; i < len(files) && removedCount < len(files)-s.cfg.CacheSize; i++ {
+			path := filepath.Join(s.cfg.CacheDir, files[i].Name())
+			if !currentWallpapers[path] {
+				err := os.Remove(path)
+				if err != nil {
+					return err
 				}
+				removedCount++
 			}
 		}
 	}
