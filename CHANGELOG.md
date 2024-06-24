@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.5 - 2024-06-24
+
+- Log output when downloading @joshbeard (#32)
+- add colored banner on version info @joshbeard (#31)
+- docs: another readme update @joshbeard (#30)
+
 ## 0.4.4 - 2024-06-24
 
 - maint: minor cleanups @joshbeard (#29)
