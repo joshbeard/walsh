@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.3 - 2024-06-24
+
+- fix: image repetition on displays @joshbeard (#24)
+
 ## 0.4.2 - 2024-06-24
 
 - Improve version output @joshbeard (#23)
