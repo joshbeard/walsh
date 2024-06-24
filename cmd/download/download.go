@@ -50,6 +50,7 @@ func BingCommand() *cobra.Command {
 			// Pass all remaining arguments to gosimac
 			run := fmt.Sprintf(`gosimac bing %s`, strings.Join(args, " "))
 
+			log.Info("Downloading Bing wallpapers")
 			result, err := util.RunCmd(run)
 			if err != nil {
 				log.Fatal(err)
@@ -57,7 +58,8 @@ func BingCommand() *cobra.Command {
 
 			log.Debugf("Bing result: %s", result)
 
-			processDownloads(sess, dest)
+			count := processDownloads(sess, dest)
+			log.Infof("Downloaded %d new images", count)
 		},
 	}
 
@@ -76,6 +78,7 @@ func UnsplashCommand(opts dlOptions) *cobra.Command {
 			// Pass all remaining arguments to gosimac
 			run := fmt.Sprintf(`gosimac unsplash %s`, strings.Join(args, " "))
 
+			log.Info("Downloading images from Unsplash")
 			result, err := util.RunCmd(run)
 			if err != nil {
 				log.Fatal(err)
@@ -83,7 +86,8 @@ func UnsplashCommand(opts dlOptions) *cobra.Command {
 
 			log.Debugf("Unsplash result: %s", result)
 
-			processDownloads(sess, dest)
+			count := processDownloads(sess, dest)
+			log.Infof("Downloaded %d new images", count)
 		},
 	}
 
@@ -113,7 +117,7 @@ func commonSetup(cmd *cobra.Command, args []string, opts dlOptions) (*session.Se
 	return sess, dest
 }
 
-func processDownloads(sess *session.Session, dest string) {
+func processDownloads(sess *session.Session, dest string) int {
 	homeDir := os.Getenv("HOME")
 	gosimacDir := filepath.Join(homeDir, "Pictures", "GoSiMac")
 
@@ -148,6 +152,7 @@ func processDownloads(sess *session.Session, dest string) {
 		}
 	}
 
+	processed := 0
 	// Move from srcs[0] to dest
 	for _, img := range images {
 		// Check if the file already exists in the destination (based on basename)
@@ -162,10 +167,14 @@ func processDownloads(sess *session.Session, dest string) {
 			continue
 		}
 
+		processed++
+
 		log.Debugf("Moving %s to %s", img.Path, dest)
 		target := filepath.Join(dest, filepath.Base(img.Path))
 		if err := os.Rename(img.Path, target); err != nil {
 			log.Errorf("Error moving file: %s", err)
 		}
 	}
+
+	return processed
 }
