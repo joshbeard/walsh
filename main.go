@@ -23,13 +23,9 @@ var (
 
 func Command() *cobra.Command {
 	rootCmd := &cobra.Command{
-		Use:   "walsh",
-		Short: "walsh is a tool for managing wallpapers",
-		Version: fmt.Sprintf("%s, commit %s, built at %s",
-			version, commit, date) +
-			"\nhttps://github.com/joshbeard/walsh" +
-			"\nCopyright (c) 2024 Josh Beard\n" +
-			"0BSD License <https://spdx.org/licenses/0BSD.html>",
+		Use:     "walsh",
+		Short:   "walsh is a tool for managing wallpapers",
+		Version: fmt.Sprintf("%s, commit %s, built at %s", version, commit, date),
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			logLevel, _ := cmd.Flags().GetString("log-level")
 			logFile, _ := cmd.Flags().GetString("log-file")
