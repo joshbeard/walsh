@@ -14,8 +14,9 @@ type Config struct {
 	HistoryFile             string   `yaml:"history"`
 	CurrentFile             string   `yaml:"current"`
 	HistorySize             int      `yaml:"history_size"`
+	CacheDir                string   `yaml:"cache_dir"`
 	CacheSize               int      `yaml:"cache_size"`
-	TmpDir                  string   `yaml:"tmp_dir"`
+	DownloadDest            string   `yaml:"download_dest"`
 	Interval                int      `yaml:"interval"`
 	DeleteBlacklistedImages bool     `yaml:"delete_blacklisted_images"`
 }
@@ -124,8 +125,8 @@ func (c Config) createDirs() error {
 		}
 	}
 
-	if !util.FileExists(c.TmpDir) {
-		err := util.MkDir(c.TmpDir)
+	if !util.FileExists(c.CacheDir) {
+		err := util.MkDir(c.CacheDir)
 		if err != nil {
 			return err
 		}
@@ -140,7 +141,7 @@ func defaultConfig() *Config {
 		CurrentFile:   xdg.DataHome + "/walsh/current.json",
 		HistoryFile:   xdg.DataHome + "/walsh/history.json",
 		ListsDir:      xdg.DataHome + "/walsh/lists",
-		TmpDir:        xdg.CacheHome + "/walsh",
+		CacheDir:      xdg.CacheHome + "/walsh/cache",
 		HistorySize:   50,
 		CacheSize:     50,
 		Interval:      0,
@@ -152,8 +153,8 @@ func applyDefaults(cfg *Config, defaults *Config) {
 		cfg.HistorySize = defaults.HistorySize
 	}
 
-	if cfg.TmpDir == "" {
-		cfg.TmpDir = defaults.TmpDir
+	if cfg.CacheDir == "" {
+		cfg.CacheDir = defaults.CacheDir
 	}
 
 	if cfg.CacheSize == 0 {

@@ -137,7 +137,7 @@ func (s Session) getImages(sources []string) ([]source.Image, error) {
 		log.Errorf("Error reading blacklist: %s", err)
 		return nil, err
 	}
-	images = s.filterImages(images, blacklist)
+	images = source.FilterImages(images, blacklist)
 
 	history, err := s.ReadList(s.cfg.HistoryFile)
 	if err != nil {
@@ -147,7 +147,7 @@ func (s Session) getImages(sources []string) ([]source.Image, error) {
 	// if the number of images is fewer than the history size, don't filter
 	if len(images) > s.cfg.HistorySize {
 		log.Debugf("Filtering images in history")
-		images = s.filterImages(images, history)
+		images = source.FilterImages(images, history)
 	}
 
 	return images, nil
@@ -184,7 +184,7 @@ func (s *Session) SetWallpaper(sources []string, displayStr string) error {
 	processDisplay := func(d Display) {
 		defer wg.Done()
 		for i := 0; i < MaxRetries; i++ {
-			image, err := source.Random(images, s.cfg.TmpDir)
+			image, err := source.Random(images, s.cfg.CacheDir)
 			if err != nil {
 				log.Errorf("Error selecting random image for display %s: %s", d.Name, err)
 				time.Sleep(1 * time.Second)
@@ -238,18 +238,6 @@ func (s *Session) SetWallpaper(sources []string, displayStr string) error {
 	}
 
 	return nil
-}
-
-// filterImages filters out images that are in a list.
-func (s Session) filterImages(images []source.Image, list []source.Image) []source.Image {
-	var filtered []source.Image
-	for _, i := range images {
-		if !source.ImageInList(i, list) {
-			filtered = append(filtered, i)
-		}
-	}
-
-	return filtered
 }
 
 // GetDisplay gets a display by index or name.
@@ -583,8 +571,8 @@ func (s Session) TrimHistory() error {
 // cleanupTmpDir cleans up the tmp directory by removing old files.
 func (s Session) cleanupTmpDir() error {
 	// Keep the most recent images in the tmp dir (based on s.cfg.CacheSize)
-	if _, err := os.Stat(s.cfg.TmpDir); err == nil {
-		files, err := os.ReadDir(s.cfg.TmpDir)
+	if _, err := os.Stat(s.cfg.CacheDir); err == nil {
+		files, err := os.ReadDir(s.cfg.CacheDir)
 		if err != nil {
 			return err
 		}
@@ -602,7 +590,7 @@ func (s Session) cleanupTmpDir() error {
 			// Remove the oldest files that are not current wallpapers
 			removedCount := 0
 			for i := 0; i < len(files) && removedCount < len(files)-s.cfg.CacheSize; i++ {
-				path := filepath.Join(s.cfg.TmpDir, files[i].Name())
+				path := filepath.Join(s.cfg.CacheDir, files[i].Name())
 				if !currentWallpapers[path] {
 					err := os.Remove(path)
 					if err != nil {
