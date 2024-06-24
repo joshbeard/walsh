@@ -3,6 +3,7 @@ package session
 // TODO: xorg support
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/charmbracelet/log"
@@ -48,11 +49,11 @@ func (x xorg) GetDisplays() ([]Display, error) {
 	lines := strings.Split(results, "\n")
 
 	var displays []Display
-	for _, line := range lines {
-		displays = append(displays, Display{Name: line})
+	for i := range lines {
+		displays = append(displays, Display{Index: i, Name: fmt.Sprintf("%d", i)})
 	}
 
-	log.Debugf("Found displays: %v", displays)
+	log.Debugf("Found %d displays: %+v", len(displays), displays)
 
 	return displays, nil
 }
