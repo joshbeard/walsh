@@ -32,7 +32,8 @@ func Command() *cobra.Command {
 			"0BSD License <https://spdx.org/licenses/0BSD.html>",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			logLevel, _ := cmd.Flags().GetString("log-level")
-			if _, _, err := setupLogger(logLevel); err != nil {
+			logFile, _ := cmd.Flags().GetString("log-file")
+			if _, _, err := setupLogger(logLevel, logFile); err != nil {
 				return err
 			}
 
@@ -59,20 +60,29 @@ func Command() *cobra.Command {
 		"display to use for operations")
 	rootCmd.PersistentFlags().StringP("log-level", "L", "info",
 		"log level (debug, info, warn, error)")
+	rootCmd.PersistentFlags().StringP("log-file", "", "",
+		"log file (default is stderr)")
 
 	return rootCmd
 }
 
 func main() {
-
 	if err := Command().Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 }
 
-func setupLogger(level string) (*log.Logger, *os.File, error) {
+func setupLogger(level, file string) (*log.Logger, *os.File, error) {
 	logH := os.Stderr
+	if file != "" {
+		var err error
+		logH, err = os.OpenFile(file, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to open log file: %w", err)
+		}
+	}
+
 	if level == "" {
 		logH, err := os.Open(os.DevNull)
 		if err != nil {
