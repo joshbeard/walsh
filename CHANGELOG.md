@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.2 - 2024-06-24
+
+- Improve version output @joshbeard (#23)
+- Avoid using same image on multiple displays @joshbeard (#23)
+
 ## 0.4.1 - 2024-06-24
 
 - fix: download dir; lock files @joshbeard (#22)
