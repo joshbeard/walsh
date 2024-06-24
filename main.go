@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/log"
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
+	"golang.org/x/exp/rand"
 
 	"github.com/joshbeard/walsh/cmd/blacklist"
 	"github.com/joshbeard/walsh/cmd/download"
@@ -25,12 +27,12 @@ var (
 )
 
 var banner = []string{
-	`ICAgICAgICAgICAgICAgICAgICAgICAgICBkOGIgICAgICAgICAgZDhiCiAgICAgICAgICAgICA`,
-	`gICAgICAgICAgICAgODhQICAgICAgICAgID84OAogICAgICAgICAgICAgICAgICAgICAgICAgZD`,
-	`g4ICAgICAgICAgICAgODhiCiA/ODggICBkOFAgIGQ4UCBkODg4YjhiICA4ODggICAuZDg4OGIsI`,
-	`CA4ODg4ODhiCiBkODggIGQ4UCcgZDhQJ2Q4UCcgPzg4ICA/ODggICA/OGIsICAgICA4OFAgYD84`,
-	`YgogPzhiICw4OGIgLDg4JyA4OGIgICw4OGIgIDg4YiAgICBgPzhiICBkODggICA4OFAKIGA/ODg`,
-	`4UCc4ODhQJyAgYD84OFAnYDg4YiAgODhiYD84ODhQJyBkODgnICAgODhiCg==`,
+	`ICAgICAgICAgICAgICAgICAgICAgICAgIGQ4YiAgICAgICAgICBkOGIKICAgICAgICAgICAgIC`,
+	`AgICAgICAgICAgIDg4UCAgICAgICAgICA/ODgKICAgICAgICAgICAgICAgICAgICAgICAgZDg4`,
+	`ICAgICAgICAgICAgODhiCj84OCAgIGQ4UCAgZDhQIGQ4ODhiOGIgIDg4OCAgIC5kODg4YiwgID`,
+	`g4ODg4OGIKZDg4ICBkOFAnIGQ4UCdkOFAnID84OCAgPzg4ICAgPzhiLCAgICAgODhQIGA/OGIK`,
+	`PzhiICw4OGIgLDg4JyA4OGIgICw4OGIgIDg4YiAgICBgPzhiICBkODggICA4OFAKYD84ODhQJz`,
+	`g4OFAnICBgPzg4UCdgODhiICA4OGJgPzg4OFAnIGQ4OCcgICA4OGIK`,
 }
 
 func Command() *cobra.Command {
@@ -95,7 +97,9 @@ func renderBanner() string {
 		return "walsh"
 	}
 
-	return color.RedString(string(decoded))
+	rndColor := randomColor()
+
+	return rndColor(string(decoded))
 }
 
 func renderVersion() string {
@@ -105,10 +109,32 @@ func renderVersion() string {
 	str += " | Commit " + color.GreenString(commit)
 	str += " | Date " + color.GreenString(date)
 	str += "\n\nhttps://github.com/joshbeard/walsh\n"
-	str += "Copyright (c) 2024 Josh Beard\n"
-	str += "0BSD License"
+	str += "Copyright (c) 2024 Josh Beard | 0BSD License"
 
 	return str
+}
+
+func randomColor() func(a ...interface{}) string {
+	rand.Seed(uint64(time.Now().UnixNano()))
+
+	colors := []func(a ...interface{}) string{
+		color.New(color.FgRed).SprintFunc(),
+		color.New(color.FgGreen).SprintFunc(),
+		color.New(color.FgYellow).SprintFunc(),
+		color.New(color.FgBlue).SprintFunc(),
+		color.New(color.FgMagenta).SprintFunc(),
+		color.New(color.FgCyan).SprintFunc(),
+		color.New(color.FgWhite).SprintFunc(),
+		color.New(color.FgHiRed).SprintFunc(),
+		color.New(color.FgHiGreen).SprintFunc(),
+		color.New(color.FgHiYellow).SprintFunc(),
+		color.New(color.FgHiBlue).SprintFunc(),
+		color.New(color.FgHiMagenta).SprintFunc(),
+		color.New(color.FgHiCyan).SprintFunc(),
+		color.New(color.FgHiWhite).SprintFunc(),
+	}
+
+	return colors[rand.Intn(len(colors))]
 }
 
 func setupLogger(level, file string) (*log.Logger, *os.File, error) {
