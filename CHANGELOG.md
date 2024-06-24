@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.2 - 2024-06-24
+
+- fix: don't set concurrently on xorg @joshbeard (#14)
+- [docs] fix license formatting @joshbeard (#13)
+- [docs] minor readme updates @joshbeard (#12)
+
 ## 0.2.1 - 2024-06-24
 
 - Xorg fix and custom logfile @joshbeard (#11)
