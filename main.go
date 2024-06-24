@@ -12,7 +12,6 @@ import (
 	"github.com/joshbeard/walsh/cmd/list"
 	"github.com/joshbeard/walsh/cmd/set"
 	"github.com/joshbeard/walsh/cmd/view"
-	"github.com/joshbeard/walsh/internal/cli"
 )
 
 // Set at build time
@@ -23,18 +22,9 @@ var (
 )
 
 func Command() *cobra.Command {
-	banner, err := cli.Banner(
-		fmt.Sprintf("walsh %s - ", version) +
-			"a tool for managing wallpapers\n" +
-			"https://github.com/joshbeard/walsh")
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	rootCmd := &cobra.Command{
 		Use:   "walsh",
 		Short: "walsh is a tool for managing wallpapers",
-		Long:  banner,
 		Version: fmt.Sprintf("%s, commit %s, built at %s",
 			version, commit, date) +
 			"\nhttps://github.com/joshbeard/walsh" +
@@ -42,7 +32,8 @@ func Command() *cobra.Command {
 			"0BSD License <https://spdx.org/licenses/0BSD.html>",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			logLevel, _ := cmd.Flags().GetString("log-level")
-			if _, _, err := setupLogger(logLevel); err != nil {
+			logFile, _ := cmd.Flags().GetString("log-file")
+			if _, _, err := setupLogger(logLevel, logFile); err != nil {
 				return err
 			}
 
@@ -69,20 +60,29 @@ func Command() *cobra.Command {
 		"display to use for operations")
 	rootCmd.PersistentFlags().StringP("log-level", "L", "info",
 		"log level (debug, info, warn, error)")
+	rootCmd.PersistentFlags().StringP("log-file", "", "",
+		"log file (default is stderr)")
 
 	return rootCmd
 }
 
 func main() {
-
 	if err := Command().Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 }
 
-func setupLogger(level string) (*log.Logger, *os.File, error) {
+func setupLogger(level, file string) (*log.Logger, *os.File, error) {
 	logH := os.Stderr
+	if file != "" {
+		var err error
+		logH, err = os.OpenFile(file, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to open log file: %w", err)
+		}
+	}
+
 	if level == "" {
 		logH, err := os.Open(os.DevNull)
 		if err != nil {

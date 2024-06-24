@@ -177,45 +177,48 @@ func (s *Session) SetWallpaper(sources []string, displayStr string) error {
 	errChan := make(chan error, len(displays))
 	defer close(errChan)
 
-	for _, d := range displays {
-		wg.Add(1)
-		go func(d Display) {
-			defer wg.Done()
-			for i := 0; i < MaxRetries; i++ {
-				image, err := source.Random(images, s.cfg.TmpDir)
-				if err != nil {
-					log.Errorf("Error selecting random image for display %s: %s", d.Name, err)
-					time.Sleep(1 * time.Second)
-					continue
-				}
-				log.Debugf("Number of images: %d", len(images))
+	// Function to process each display
+	processDisplay := func(d Display) {
+		defer wg.Done()
+		for i := 0; i < MaxRetries; i++ {
+			image, err := source.Random(images, s.cfg.TmpDir)
+			if err != nil {
+				log.Errorf("Error selecting random image for display %s: %s", d.Name, err)
+				time.Sleep(1 * time.Second)
+				continue
+			}
+			log.Debugf("Number of images: %d", len(images))
 
-				err = s.svc.SetWallpaper(image.Path, d)
-				if err != nil {
-					log.Errorf("Error setting wallpaper for display %s: %s. Will retry", d.Name, err)
-					time.Sleep(1 * time.Second)
-					continue
-				}
+			err = s.svc.SetWallpaper(image.Path, d)
+			if err != nil {
+				log.Errorf("Error setting wallpaper for display %s: %s. Will retry", d.Name, err)
+				time.Sleep(1 * time.Second)
+				continue
+			}
 
-				err = s.WriteCurrent(d, image)
-				if err != nil {
-					log.Errorf("Error saving to history for display %s: %s", d.Name, err)
-					errChan <- err
-					return
-				}
-
-				err = s.WriteHistory(image)
-				if err != nil {
-					log.Errorf("Error writing to history for display %s: %s", d.Name, err)
-					errChan <- err
-					return
-				}
-
-				log.Infof("Set wallpaper for display %s: %s", d.Name, image.Path)
+			err = s.WriteCurrent(d, image)
+			if err != nil {
+				log.Errorf("Error saving to history for display %s: %s", d.Name, err)
+				errChan <- err
 				return
 			}
-			errChan <- errors.New("max retries exceeded")
-		}(d)
+
+			err = s.WriteHistory(image)
+			if err != nil {
+				log.Errorf("Error writing to history for display %s: %s", d.Name, err)
+				errChan <- err
+				return
+			}
+
+			log.Infof("Set wallpaper for display %s: %s", d.Name, image.Path)
+			return
+		}
+		errChan <- errors.New("max retries exceeded")
+	}
+
+	for _, d := range displays {
+		wg.Add(1)
+		go processDisplay(d)
 	}
 
 	wg.Wait()
