@@ -202,6 +202,12 @@ func (s *Session) SetWallpaper(sources []string, displayStr string) error {
 
 			mu.Lock()
 
+			// Don't re-use the same image for multiple displays, unless there aren't
+			// enough images to go around.
+			if len(displays) <= len(images) {
+				images = source.RemoveImage(images, image)
+			}
+
 			err = s.WriteCurrent(d, image)
 			if err != nil {
 				log.Errorf("Error saving to history for display %s: %s", d.Name, err)
