@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.1 - 2024-06-24
+
+- Xorg fix and custom logfile @joshbeard (#11)
+
 ## 0.2.0 - 2024-06-24
 
 - xorg and macos support @joshbeard (#10)
