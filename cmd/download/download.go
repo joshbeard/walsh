@@ -33,7 +33,10 @@ func Command() *cobra.Command {
 
 	cmd.AddCommand(BingCommand())
 	cmd.AddCommand(UnsplashCommand(opts))
-	cmd.PersistentFlags().StringP("dest", "t", "", "destination URI for downloaded wallpapers")
+	cmd.PersistentFlags().StringP("dest", "t", "",
+		"destination URI for downloaded wallpapers")
+	cmd.PersistentFlags().BoolP("no-move", "m", false,
+		"do not move downloaded images from the tmp directory to the destination")
 
 	return cmd
 }
@@ -46,6 +49,7 @@ func BingCommand() *cobra.Command {
 		Example: "  walsh download bing -- -n 10",
 		Run: func(cmd *cobra.Command, args []string) {
 			sess, dest := commonSetup(cmd, args, dlOptions{})
+			noMove, _ := cmd.Flags().GetBool("no-move")
 
 			// Pass all remaining arguments to gosimac
 			run := fmt.Sprintf(`gosimac bing %s`, strings.Join(args, " "))
@@ -58,7 +62,7 @@ func BingCommand() *cobra.Command {
 
 			log.Debugf("Bing result: %s", result)
 
-			count := processDownloads(sess, dest)
+			count := processDownloads(sess, noMove, dest)
 			log.Infof("Downloaded %d new images", count)
 		},
 	}
@@ -71,9 +75,10 @@ func UnsplashCommand(opts dlOptions) *cobra.Command {
 		Use:     "unsplash [gosimac args]",
 		Aliases: []string{"u"},
 		Short:   "download wallpapers from Unsplash",
-		Example: "  walsh download unsplash -- --query 'nature' --orientation 'landscape'",
+		Example: "  walsh download unsplash -- --query 'nature'",
 		Run: func(cmd *cobra.Command, args []string) {
 			sess, dest := commonSetup(cmd, args, opts)
+			noMove, _ := cmd.Flags().GetBool("no-move")
 
 			// Pass all remaining arguments to gosimac
 			run := fmt.Sprintf(`gosimac unsplash %s`, strings.Join(args, " "))
@@ -86,7 +91,7 @@ func UnsplashCommand(opts dlOptions) *cobra.Command {
 
 			log.Debugf("Unsplash result: %s", result)
 
-			count := processDownloads(sess, dest)
+			count := processDownloads(sess, noMove, dest)
 			log.Infof("Downloaded %d new images", count)
 		},
 	}
@@ -117,12 +122,11 @@ func commonSetup(cmd *cobra.Command, args []string, opts dlOptions) (*session.Se
 	return sess, dest
 }
 
-func processDownloads(sess *session.Session, dest string) int {
+func processDownloads(sess *session.Session, noMove bool, dest string) int {
 	homeDir := os.Getenv("HOME")
 	gosimacDir := filepath.Join(homeDir, "Pictures", "GoSiMac")
 
-	srcs := []string{"dir://" + gosimacDir}
-	images, err := source.GetImages(srcs)
+	images, err := source.GetImages([]string{gosimacDir})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -153,10 +157,7 @@ func processDownloads(sess *session.Session, dest string) int {
 	}
 
 	processed := 0
-	// Move from srcs[0] to dest
 	for _, img := range images {
-		// Check if the file already exists in the destination (based on basename)
-		// If it does, skip it
 		if util.FileExists(filepath.Join(dest, filepath.Base(img.Path))) {
 			log.Debugf("File already exists in destination: %s", img.Path)
 
@@ -169,9 +170,11 @@ func processDownloads(sess *session.Session, dest string) int {
 
 		processed++
 
-		if err := moveImage(img, dest); err != nil {
-			log.Errorf("Error moving file: %s", err)
-			continue
+		if !noMove {
+			if err := moveImage(img, dest); err != nil {
+				log.Errorf("Error moving file: %s", err)
+				continue
+			}
 		}
 	}
 
