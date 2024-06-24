@@ -1,7 +1,5 @@
 # walsh
 
-Josh's wallpaper tool
-
 This is a simple wallpaper manager for randomizing images on multiple displays
 from different sources, saving images to lists, blacklisting images, and more.
 It's a personal tool that fits my needs by wrapping other tools to do the real
@@ -16,13 +14,15 @@ script, and now a Go program. It's really just a wrapper, though.
 
 ## Features
 
+These are the main reasons for creating this tool:
+
 * Download wallpapers from Bing and Unsplash using
   [gosimac](https://github.com/1995parham/gosimac)
-* Randomly set a wallpaper per display
-* Set wallpapers on demand, per-display
-* Add wallpapers to a list and set from a list
+* Randomly or specifically set a wallpaper per display
+* Set wallpapers on demand or at an interval
+* Add wallpapers to lists and set from lists
 * Track recent wallpapers and avoid setting them for a while
-* Blacklist wallpapers
+* Blacklist wallpapers (useful when downloading from Bing or Unsplash)
 * Source images from remote server over SSH
 * Supports Xorg, Wayland, macOS
 
@@ -40,6 +40,9 @@ thousands of random images at a regular interval that I can add to lists
 whether running on Xorg or Wayland.
 
 ## Installation
+
+The latest release can be found on the [releases](https://github.com/joshbeard/walsh/releases)
+page and can be downloaded and installed manually.
 
 To download and install the latest version of walsh using `curl` and piping it
 to the shell, run the following command:
@@ -79,6 +82,9 @@ See `walsh help` for more information.
 
 If you run `walsh` without any arguments, it defaults to the `set` command and
 will set a random wallpaper on each display.
+
+Ensure a configuration file exists at the default location and has at least one
+source configured. See [Configuration](#configuration) for more information.
 
 ### Set Wallpaper
 
@@ -159,6 +165,70 @@ walsh bl -d 1
 walsh bl 1
 ```
 
+### Desktop Environments
+
+If using an SSH source, you will need to ensure your SSH agent is running and
+the `SSH_AUTH_SOCK` environment variable is set. This is necessary for the
+remote source to work.
+
+#### Hyprland
+
+In `~/.config/hypr/hyprland.conf`:
+
+```plain
+exec-once = $HOME/bin/walsh set --interval 600
+```
+
+#### i3
+
+In `~/.config/i3/config`:
+
+```plain
+exec --no-startup-id $HOME/bin/walsh set --interval 600
+```
+
+#### macOS
+
+Create a `launchd` plist file at
+`~/Library/LaunchAgents/com.github.joshbeard.walsh.plist` with the following
+contents:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.yourusername.walsh</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/yourusername/bin/walsh</string>
+        <string>set</string>
+        <string>--interval</string>
+        <string>600</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>StandardOutPath</key>
+    <string>/tmp/walsh.stdout</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/walsh.stderr</string>
+</dict>
+</plist>
+```
+
+Then load the plist:
+
+```shell
+launchctl load ~/Library/LaunchAgents/com.github.joshbeard.walsh.plist
+```
+
+To unload the plist:
+
+```shell
+launchctl unload ~/Library/LaunchAgents/com.github.joshbeard.walsh.plist
+```
+
 ## Configuration
 
 Standard XDG configuration directories are used for configuration files.
@@ -169,31 +239,41 @@ The default configuration file is `${XDG_CONFIG_HOME}/walsh/config.yml`
 The default configuration is as follows:
 
 ```yaml
+# A list of directories or URIs to source images from.
 sources: []
+
+# The file to track the currently set wallpaper.
 current: ${XDG_DATA_HOME}/walsh/current.json
+
+# The file to track blacklisted wallpapers.
 blacklist: ${XDG_CONFIG_HOME}/walsh/blacklist.json
+
+# The file to track wallpaper history.
 history: ${XDG_DATA_HOME}/walsh/history.json
+
+# The directory where lists of wallpapers are stored.
 lists_dir: ${XDG_DATA_HOME}/walsh/lists
+
+# The directory to store temporary files, such as images downloaded from remote
+# sources.
 tmp_dir: ${XDG_CACHE_HOME}/walsh
+
+# The number of images to keep in the history file.
 history_size: 50
+
+# The number of images to keep in the cache.
 cache_size: 50
+
+# The interval in seconds to set a new wallpaper. Set to 0 to disable.
 interval: 0
 ```
 
-For example:
-
-```yaml
-sources: []
-current: /home/user/.local/share/walsh/current.json
-blacklist: /home/user/.config/walsh/blacklist.json
-history: /home/user/.local/share/walsh/history.json
-lists_dir: /home/user/.local/share/walsh/lists
-tmp_dir: /home/user/.cache/walsh
-history_size: 50
-cache_size: 50
-interval: 0
-```
-
+* On Linux and BSD, `${XDG_CONFIG_HOME}` defaults to `~/.config`,
+  `${XDG_DATA_HOME}` defaults to `~/.local/share`, and `${XDG_CACHE_HOME}`
+  defaults to `~/.cache`.
+* On macOS, `${XDG_CONFIG_HOME}` defaults to `~/Library/Application Support`,
+  `${XDG_DATA_HOME}` defaults to `~/Library/Application Support`, and
+  `${XDG_CACHE_HOME}` defaults to `~/Library/Caches`.
 
 ### Sources
 
@@ -206,29 +286,3 @@ sources:
   - /home/user/Pictures/wallpapers
   - ssh://user@host/path/to/wallpapers
 ```
-
-To use a remote source in a crontab, make sure SSH is configured correct. E.g.
-
-```plain
-*/10 * * * * pgrep XORG && DISPLAY=:0 XDG_SESSION_TYPE=x11 SSH_AUTH_SOCK=/path/to/ssh_agent nice -n 19 walls.sh set --once
-```
-
-### Lists Directory
-
-Lists directory is the directory where lists of wallpapers are stored. Lists
-are plain text files with one image path per line.
-
-### Blacklist File
-
-Blacklist file is a plain text file with one image path per line. Images in
-the blacklist will not be set as wallpapers.
-
-### History File
-
-History file is a plain text file with one image path per line. Images in the
-history file will not be set as wallpapers until all other images have been
-set.
-
-### Current File
-
-Current file is a JSON file that tracks the currently set wallpaper.
