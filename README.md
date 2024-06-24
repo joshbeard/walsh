@@ -1,9 +1,9 @@
 # walsh
 
-Walsh is a versatile wallpaper manager designed to randomize images on multiple
-displays from various sources. It allows you to save images to lists, blacklist
-unwanted images, and more. This tool wraps other utilities to handle the heavy
-lifting.
+Walsh is a niche CLI wallpaper manager for randomizing images on multiple
+displays from various configured sources. It supports saving images to lists,
+blacklisting unwanted images, downloading images, and more, by acting as a
+wrapper around other tools to query displays and set wallpapers.
 
 <img align="right" width="256" height="256" src=".doc/image.jpg">
 
@@ -23,9 +23,11 @@ lifting.
 1. Ensure [dependencies](#dependencies) are installed.
 2. [Install](#installation) the latest version of walsh.
 3. [Run](#usage) walsh to set a random wallpaper on each display.
-  * `~/Pictures/Wallpapers` is the default source directory.
-  * Run `walsh download bing` to download 10 wallpapers from Bing.
-4. [Configure](#configuration) the sources you want to use.
+    * You can run `walsh download bing` to get a few wallpapers to start.
+    * Then just run `walsh set` to set a random wallpaper.
+    * `~/Pictures/Wallpapers` is the default source directory.
+4. [Configure](#configuration) walsh to customize it, specifically the sources
+   you want to use.
 
 ## Dependencies
 
