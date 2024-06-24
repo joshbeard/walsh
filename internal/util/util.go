@@ -89,7 +89,7 @@ func FileExists(filename string) bool {
 }
 
 func MkDir(path string) error {
-	if _, err := os.Stat(path); os.IsNotExist(err) {
+	if !FileExists(path) {
 		err := os.MkdirAll(path, 0755)
 		if err != nil {
 			return fmt.Errorf("failed to create directory: %w", err)
@@ -124,11 +124,6 @@ func RunCmd(cmd string) (string, error) {
 
 	// Return the output as a string.
 	return out.String(), nil
-}
-
-func CmdExists(cmd string) bool {
-	_, err := exec.LookPath(cmd)
-	return err == nil
 }
 
 func Sha256(path string) (string, error) {

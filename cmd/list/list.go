@@ -2,12 +2,12 @@ package list
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/charmbracelet/log"
 	"github.com/joshbeard/walsh/internal/cli"
+	"github.com/joshbeard/walsh/internal/util"
 	"github.com/spf13/cobra"
 )
 
@@ -155,8 +155,7 @@ func ViewCommand() *cobra.Command {
 			log.Infof("Viewing %s", selected.Source)
 			// Check if the image is already cached
 			if selected.Path != "" {
-				_, err := os.Stat(selected.Path)
-				if err == nil {
+				if util.FileExists(selected.Path) {
 					if err = sess.View(selected.Path); err != nil {
 						log.Fatal(err)
 					}

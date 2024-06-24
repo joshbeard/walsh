@@ -5,7 +5,6 @@ package session
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/charmbracelet/log"
@@ -18,8 +17,7 @@ var _ SessionProvider = &macos{}
 
 // isMacOS checks if the current session is macOS.
 func isMacOS() bool {
-	_, err := os.Stat("/System/Library/CoreServices/SystemVersion.plist")
-	return err == nil
+	return util.FileExists("/System/Library/CoreServices/SystemVersion.plist")
 }
 
 func (m macos) SetWallpaper(path string, display Display) error {
@@ -77,7 +75,6 @@ func (m macos) GetDisplays() ([]Display, error) {
 }
 
 func (m macos) GetCurrentWallpaper(display, _ Display) (string, error) {
-	// tell application "System Events" to get picture of desktop 2
 	osascript := fmt.Sprintf(
 		`osascript -e 'tell application "System Events" to get picture of desktop %s'`,
 		display.Name,
