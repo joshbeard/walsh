@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.4 - 2024-06-24
+
+- maint: minor cleanups @joshbeard (#29)
+- [docs] More readme improvements @joshbeard (#28)
+- [docs] More readme improvements @joshbeard (#27)
+- [docs] readme improvements @joshbeard (#26)
+- [docs] remove duplicate license file @joshbeard (#25)
+
 ## 0.4.3 - 2024-06-24
 
 - fix: image repetition on displays @joshbeard (#24)
