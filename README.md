@@ -179,12 +179,26 @@ In `~/.config/hypr/hyprland.conf`:
 exec-once = $HOME/bin/walsh set --interval 600
 ```
 
+When an SSH source is used, you may need to set the `SSH_AUTH_SOCK` environment
+variable:
+
+```plain
+exec-once = SSH_AUTH_SOCK=/run/user/1000/gcr/ssh $HOME/bin/walsh set --interval 600
+```
+
 #### i3
 
 In `~/.config/i3/config`:
 
 ```plain
 exec --no-startup-id $HOME/bin/walsh set --interval 600
+```
+
+When an SSH source is used, you may need to set the `SSH_AUTH_SOCK` environment
+variable:
+
+```plain
+exec --no-startup-id export SSH_AUTH_SOCK=/run/user/1000/gcr/ssh && $HOME/bin/walsh set --interval 600
 ```
 
 #### macOS
