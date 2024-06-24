@@ -51,7 +51,7 @@ func Command() *cobra.Command {
 	rootCmd.AddCommand(blacklist.Command())
 	rootCmd.AddCommand(list.Command())
 	rootCmd.AddCommand(set.Command())
-	rootCmd.AddCommand(download.Cmd)
+	rootCmd.AddCommand(download.Command())
 	rootCmd.AddCommand(view.Command())
 	rootCmd.AddCommand(list.AddCommand())
 

@@ -327,3 +327,37 @@ func ImageInList(image Image, list []Image) bool {
 
 	return false
 }
+
+// FilterImages filters out images that are in a list.
+func FilterImages(images []Image, list []Image) []Image {
+	var filtered []Image
+	for _, i := range images {
+		if !ImageInList(i, list) {
+			filtered = append(filtered, i)
+		}
+	}
+
+	return filtered
+}
+
+func GetMatches(images []Image, list []Image) []Image {
+	var matches []Image
+	for _, i := range images {
+		if ImageInList(i, list) {
+			matches = append(matches, i)
+		}
+	}
+
+	return matches
+}
+
+func RemoveImage(list []Image, image Image) []Image {
+	var newList []Image
+	for _, i := range list {
+		if i.ShaSum != image.ShaSum {
+			newList = append(newList, i)
+		}
+	}
+
+	return newList
+}

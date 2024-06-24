@@ -270,7 +270,7 @@ lists_dir: ${XDG_DATA_HOME}/walsh/lists
 
 # The directory to store temporary files, such as images downloaded from remote
 # sources.
-tmp_dir: ${XDG_CACHE_HOME}/walsh
+cache_dir: ${XDG_CACHE_HOME}/walsh/cache
 
 # The number of images to keep in the history file.
 history_size: 50
@@ -280,6 +280,10 @@ cache_size: 50
 
 # The interval in seconds to set a new wallpaper. Set to 0 to disable.
 interval: 0
+
+# A destination URI to download images to. This is used by the 'download'
+# command. Uses the same syntax as the 'sources' list.
+download_dest: ""
 ```
 
 * On Linux and BSD, `${XDG_CONFIG_HOME}` defaults to `~/.config`,
