@@ -44,12 +44,15 @@ func (h hyprland) parseDisplays(output string) ([]Display, error) {
 	var displays []Display
 	re := regexp.MustCompile(`^Monitor (\S+) \(ID (\d+)\):`)
 
-	for i, line := range lines {
+	idx := 0
+	for _, line := range lines {
 		if matches := re.FindStringSubmatch(line); matches != nil {
 			displays = append(displays, Display{
-				Index: i,
+				Index: idx,
 				Name:  matches[1],
 			})
+
+			idx++
 		}
 	}
 
