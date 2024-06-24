@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -62,8 +63,10 @@ func GetImages(srcs []string) ([]Image, error) {
 	var results, images []Image
 
 	for _, src := range srcs {
+		log.Debugf("getting images from source '%s'", src)
 		switch {
-		case strings.HasPrefix(src, "/"):
+		case util.IsFilePath(src):
+			log.Debugf("source '%s' is a file", src)
 			results, err = getDirImages(src)
 		case strings.HasPrefix(src, SourceDirectory.String()):
 			results, err = getDirImages(src)
@@ -181,9 +184,6 @@ func getDirImages(src string) ([]Image, error) {
 // a slice of paths. Basically just returns each line as a path.
 func getListImages(src string) ([]Image, error) {
 	// Remove the "list://" prefix from the source string to get the file path.
-	if !strings.HasPrefix(src, SourceList.String()) {
-		return nil, fmt.Errorf("invalid source format")
-	}
 	listPath := strings.TrimPrefix(src, SourceList.String())
 
 	// Open the list file.
@@ -222,17 +222,13 @@ func getListImages(src string) ([]Image, error) {
 // The source string should be in the format:
 // ssh://user@host:/path/to/images
 func getSSHImages(src string) ([]Image, error) {
-	if !strings.HasPrefix(src, SourceSSH.String()) {
-		return nil, fmt.Errorf("invalid source format")
+	// Parse the SSH URI.
+	sshURI, err := ParseSSHURI(src)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse SSH URI: %w", err)
 	}
 
-	source := strings.TrimPrefix(src, SourceSSH.String())
-	addrParts := strings.Split(source, ":")
-	if len(addrParts) != 2 {
-		return nil, fmt.Errorf("invalid source format")
-	}
-	addr := addrParts[0]
-	path := addrParts[1]
+	addr := sshURI.Address
 
 	// Test connectivity
 	ok, err := isSSHAlive(addr)
@@ -245,9 +241,10 @@ func getSSHImages(src string) ([]Image, error) {
 	}
 
 	// Construct the SSH command.
-	sshCmd := fmt.Sprintf("ssh %s ls %s", addr, path)
+	sshCmd := fmt.Sprintf("ssh %s ls %s", addr, sshURI.Path)
 
 	// Run the SSH command.
+	log.Debugf("running SSH command: %s", sshCmd)
 	output, err := util.RunCmd(sshCmd)
 	if err != nil {
 		return nil, fmt.Errorf("failed to run SSH command: %w", err)
@@ -266,6 +263,8 @@ func getSSHImages(src string) ([]Image, error) {
 		}
 	}
 
+	log.Debugf("found %d images in source '%s'", len(validImages), src)
+
 	return validImages, nil
 }
 
@@ -283,21 +282,90 @@ func isSSHAlive(addr string) (bool, error) {
 	return true, nil
 }
 
+type SSHURI struct {
+	User    string
+	Server  string
+	Path    string
+	Address string
+}
+
+func ParseSSHURI(uri string) (*SSHURI, error) {
+	// Ensure the URI starts with "ssh://"
+	if !strings.HasPrefix(uri, "ssh://") {
+		return nil, fmt.Errorf("invalid SSH URI: %s", uri)
+	}
+
+	// Parse the URI using net/url
+	parsedURI, err := url.Parse(uri)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse SSH URI: %w", err)
+	}
+
+	// Initialize the SSHURI struct
+	sshURI := &SSHURI{
+		Server:  parsedURI.Hostname(),
+		Path:    parsedURI.Path,
+		Address: parsedURI.Hostname(),
+	}
+
+	// Extract user info if present
+	if parsedURI.User != nil {
+		sshURI.User = parsedURI.User.Username()
+		sshURI.Address = fmt.Sprintf("%s@%s", sshURI.User, sshURI.Server)
+	}
+
+	// Ensure the path is not empty
+	if sshURI.Path == "" {
+		return nil, fmt.Errorf("path is missing in the SSH URI: %s", uri)
+	}
+
+	return sshURI, nil
+}
+
+// BuildSCPCommand builds an scp command string from the SSHURI struct.
+func BuildSCPCommand(source string, destination string) (string, error) {
+	var src, dst string
+
+	sourceIsSSH := strings.HasPrefix(source, "ssh://")
+
+	// Parse the SSH URI if sourceIsSSH is true
+	if sourceIsSSH {
+		parsedURI, err := ParseSSHURI(source)
+		if err != nil {
+			return "", err
+		}
+		if parsedURI.User != "" {
+			src = fmt.Sprintf("%s@%s:\"%s\"", parsedURI.User, parsedURI.Server, parsedURI.Path)
+		} else {
+			src = fmt.Sprintf("%s:\"%s\"", parsedURI.Server, parsedURI.Path)
+		}
+		dst = escapePath(destination)
+	} else {
+		// Parse the SSH URI if the destination is an SSH URI
+		parsedURI, err := ParseSSHURI(destination)
+		if err != nil {
+			return "", err
+		}
+		if parsedURI.User != "" {
+			dst = fmt.Sprintf("%s@%s:\"%s\"", parsedURI.User, parsedURI.Server, parsedURI.Path)
+		} else {
+			dst = fmt.Sprintf("%s:\"%s\"", parsedURI.Server, parsedURI.Path)
+		}
+		src = escapePath(source)
+	}
+
+	return fmt.Sprintf("scp %s %s", src, dst), nil
+}
+
+func escapePath(path string) string {
+	return strings.ReplaceAll(path, " ", "\\ ")
+}
+
 func downloadSSHImage(src Image, dest string) (Image, error) {
-	if !strings.HasPrefix(src.Source, SourceSSH.String()) {
-		return Image{}, fmt.Errorf("invalid source format")
+	sshCmd, err := BuildSCPCommand(src.Source, dest)
+	if err != nil {
+		return Image{}, fmt.Errorf("failed to build SCP command: %w", err)
 	}
-
-	source := strings.TrimPrefix(src.Source, SourceSSH.String())
-	addrParts := strings.Split(source, ":")
-	if len(addrParts) != 2 {
-		return Image{}, fmt.Errorf("invalid source format")
-	}
-	addr := addrParts[0]
-	path := addrParts[1]
-
-	// Construct the SSH command.
-	sshCmd := fmt.Sprintf("scp %s:\"%s\" \"%s\"", addr, path, dest)
 
 	// Run the SSH command.
 	result, err := util.RunCmd(sshCmd)
@@ -314,6 +382,27 @@ func downloadSSHImage(src Image, dest string) (Image, error) {
 	src.ShaSum = checksum
 
 	return src, nil
+}
+
+func UploadSSHImage(src Image, dest string) error {
+	sshCmd, err := BuildSCPCommand(src.Path, dest)
+	if err != nil {
+		return fmt.Errorf("failed to build SCP command: %w", err)
+	}
+
+	// Run the SSH command.
+	result, err := util.RunCmd(sshCmd)
+	if err != nil {
+		return fmt.Errorf("failed to run SSH command: %w output: %s", err, result)
+	}
+
+	// Remove the source file
+	log.Debugf("Removing source file: %s", src.Path)
+	if err := os.Remove(src.Path); err != nil {
+		return fmt.Errorf("failed to remove source file: %w", err)
+	}
+
+	return nil
 }
 
 func ImageInList(image Image, list []Image) bool {

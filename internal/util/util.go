@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"sort"
 	"strconv"
 
@@ -88,6 +89,24 @@ func FileExists(filename string) bool {
 	return true
 }
 
+// IsFilePath checks if the given path is a valid file path.
+// It supports both absolute and relative paths and replaces environment variables.
+func IsFilePath(path string) bool {
+	// Replace environment variables in the path
+	path = os.ExpandEnv(path)
+
+	// Get the absolute path
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		return false
+	}
+
+	log.Debugf("Checking if path is a file: %s", absPath)
+
+	_, err = os.Stat(absPath)
+	return !os.IsNotExist(err)
+}
+
 func MkDir(path string) error {
 	if !FileExists(path) {
 		err := os.MkdirAll(path, 0755)
@@ -119,7 +138,7 @@ func RunCmd(cmd string) (string, error) {
 
 	// Log stderr
 	if stderr.Len() > 0 {
-		fmt.Println("stderr:", stderr.String())
+		log.Warnf("stderr: %s", stderr.String())
 	}
 
 	// Return the output as a string.
