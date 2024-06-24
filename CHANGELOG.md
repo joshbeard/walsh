@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.1 - 2024-06-24
+
+- fix: download dir; lock files @joshbeard (#22)
+- fix: install script on darwin/bsd @joshbeard (#21)
+- Add download example commands @joshbeard (#20)
+
 ## 0.4.0 - 2024-06-24
 
 - feat: download @joshbeard (#19)
