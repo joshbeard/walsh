@@ -322,3 +322,10 @@ To unload the plist:
 launchctl unload ~/Library/LaunchAgents/com.github.joshbeard.walsh.plist
 ```
 
+## License
+
+walsh is released under the [0BSD license](LICENSE.md)
+
+* swww is released under the [GPL-3.0 license](https://github.com/LGFae/swww/blob/main/LICENSE)
+* gosimac is released under the [GPL-2.0 license](https://github.com/1995parham/gosimac/blob/main/LICENSE)
+* nitrogen is released under the [GPL-2.0 license](https://github.com/l3ib/nitrogen/?tab=GPL-2.0-1-ov-file#readme)
