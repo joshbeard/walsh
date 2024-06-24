@@ -68,7 +68,8 @@ const (
 	SessionTypeUnknown SessionType = iota
 	SessionTypeX11Unknown
 	SessionTypeWayland
-	DesktopTypeHyprland
+	SessionTypeSway
+	SessionTypeHyprland
 	SessionTypeMacOS
 )
 
@@ -88,12 +89,14 @@ func NewSession(cfg *config.Config) *Session {
 
 	var svc SessionProvider
 	switch sessType {
-	case DesktopTypeHyprland:
+	case SessionTypeHyprland:
 		svc = &hyprland{}
 	case SessionTypeX11Unknown:
 		svc = &xorg{}
 	case SessionTypeMacOS:
 		svc = &macos{}
+	case SessionTypeSway:
+		svc = &sway{}
 	default:
 		log.Warnf("Unknown session type: %d", sessType)
 		return nil
@@ -298,14 +301,18 @@ func detect() (SessionType, error) {
 	// X11 - XDG_SESSION_TYPE=x11
 	xdgCurrentDesktop := os.Getenv("XDG_CURRENT_DESKTOP")
 	xdgSessionType := os.Getenv("XDG_SESSION_TYPE")
+	swaySocket := os.Getenv("SWAYSOCK")
 
 	switch {
 	case xdgCurrentDesktop == "Hyprland":
 		log.Debugf("Detected Hyprland desktop")
-		return DesktopTypeHyprland, nil
+		return SessionTypeHyprland, nil
 	case xdgSessionType == "x11":
 		log.Debugf("Detected X11 session")
 		return SessionTypeX11Unknown, nil
+	case xdgSessionType == "wayland" && swaySocket != "":
+		log.Debugf("Detected Sway session")
+		return SessionTypeSway, nil
 	case xdgSessionType == "wayland":
 		log.Debugf("Detected Wayland session")
 		return SessionTypeWayland, nil
