@@ -1,6 +1,6 @@
 # BSD Zero Clause License
 
-## Copyright (C) 2024 by Josh Beard <josh@jbeard.dev>
+Copyright (C) 2024 by Josh Beard <josh@jbeard.dev>
 
 Permission to use, copy, modify, and/or distribute this software for any
 purpose with or without fee is hereby granted.
