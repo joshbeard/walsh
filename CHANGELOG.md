@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.0 - 2024-06-24
+
+- feat: download @joshbeard (#19)
+- fix hyprland display index @joshbeard (#18)
+
 ## 0.3.0 - 2024-06-24
 
 - feat: sway support @joshbeard (#17)
