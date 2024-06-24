@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.3 - 2024-06-24
+
+- [docs] example with SSH source @joshbeard (#16)
+- fix: refresh session/displays on interval @joshbeard (#15)
+
 ## 0.2.2 - 2024-06-24
 
 - fix: don't set concurrently on xorg @joshbeard (#14)
