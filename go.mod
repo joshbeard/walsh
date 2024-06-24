@@ -6,10 +6,10 @@ require (
 	github.com/adrg/xdg v0.4.0
 	github.com/boumenot/gocover-cobertura v1.2.0
 	github.com/charmbracelet/log v0.4.0
+	github.com/fatih/color v1.17.0
 	github.com/golangci/golangci-lint v1.59.1
 	github.com/segmentio/golines v0.12.2
 	github.com/spf13/cobra v1.8.1
-	golang.org/x/crypto v0.24.0
 	golang.org/x/vuln v1.1.2
 	gopkg.in/yaml.v3 v3.0.1
 	mvdan.cc/gofumpt v0.6.0
@@ -60,7 +60,6 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/denis-tingaikin/go-header v0.5.0 // indirect
 	github.com/ettle/strcase v0.2.0 // indirect
-	github.com/fatih/color v1.17.0 // indirect
 	github.com/fatih/structtag v1.2.0 // indirect
 	github.com/firefart/nonamedreturns v1.0.5 // indirect
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
@@ -129,7 +128,6 @@ require (
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/moricho/tparallel v0.3.1 // indirect
-	github.com/muesli/reflow v0.3.0 // indirect
 	github.com/muesli/termenv v0.15.2 // indirect
 	github.com/nakabonne/nestif v0.3.1 // indirect
 	github.com/nishanths/exhaustive v0.12.0 // indirect
@@ -195,6 +193,7 @@ require (
 	go.uber.org/automaxprocs v1.5.3 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
 	go.uber.org/zap v1.24.0 // indirect
+	golang.org/x/crypto v0.24.0 // indirect
 	golang.org/x/exp v0.0.0-20240613232115-7f521ea00fb8 // indirect
 	golang.org/x/exp/typeparams v0.0.0-20240314144324-c7f7c6466f7f // indirect
 	golang.org/x/mod v0.18.0 // indirect
