@@ -114,7 +114,10 @@ func commonSetup(cmd *cobra.Command, args []string, opts dlOptions) (*session.Se
 }
 
 func processDownloads(sess *session.Session, dest string) {
-	srcs := []string{"dir:///home/josh/Pictures/GoSiMac"}
+	homeDir := os.Getenv("HOME")
+	gosimacDir := filepath.Join(homeDir, "Pictures", "GoSiMac")
+
+	srcs := []string{"dir://" + gosimacDir}
 	images, err := source.GetImages(srcs)
 	if err != nil {
 		log.Fatal(err)
