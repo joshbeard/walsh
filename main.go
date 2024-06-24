@@ -105,7 +105,7 @@ func renderVersion() string {
 	str += " | Commit " + color.GreenString(commit)
 	str += " | Date " + color.GreenString(date)
 	str += "\n\nhttps://github.com/joshbeard/walsh\n"
-	str += "Copyright (c) 2021 Josh Beard\n"
+	str += "Copyright (c) 2024 Josh Beard\n"
 	str += "0BSD License"
 
 	return str
