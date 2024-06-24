@@ -18,6 +18,15 @@ lifting.
 * Source images from a remote server over SSH
 * Supports Xorg, Wayland, and macOS
 
+## Getting Started
+
+1. Ensure [dependencies](#dependencies) are installed.
+2. [Install](#installation) the latest version of walsh.
+3. [Run](#usage) walsh to set a random wallpaper on each display.
+  * `~/Pictures/Wallpapers` is the default source directory.
+  * Run `walsh download bing` to download 10 wallpapers from Bing.
+4. [Configure](#configuration) the sources you want to use.
+
 ## Dependencies
 
 ### Wayland
@@ -55,6 +64,17 @@ to the shell, run the following command:
 curl -sfL https://raw.githubusercontent.com/joshbeard/walsh/master/install.sh | sh -
 ```
 
+The script will:
+- Detect your OS and architecture.
+- Download the latest release of walsh from GitHub.
+- Verify the checksum of the downloaded package.
+- Extract the binary and move it to the specified directory (default is `$HOME/bin`).
+
+Make sure the installation directory is in your `PATH` so you can easily run
+`walsh` from anywhere.
+
+### Custom Installation Directory
+
 If you want to specify a custom installation directory, you can set the
 `INSTALL_DIR` environment variable or pass the `-d` (or `--dir`) argument. For
 example:
@@ -66,15 +86,6 @@ INSTALL_DIR=/usr/local/bin curl -sfL https://raw.githubusercontent.com/joshbeard
 # Using -d (or --dir) argument
 curl -sfL https://raw.githubusercontent.com/joshbeard/walsh/master/install.sh | sh -s -- -d /usr/local/bin
 ```
-
-The script will:
-- Detect your OS and architecture.
-- Download the latest release of walsh from GitHub.
-- Verify the checksum of the downloaded package.
-- Extract the binary and move it to the specified directory (default is `$HOME/bin`).
-
-Make sure the installation directory is in your `PATH` so you can easily run
-`walsh` from anywhere.
 
 ## Usage
 
