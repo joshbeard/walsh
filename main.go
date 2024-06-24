@@ -12,7 +12,6 @@ import (
 	"github.com/joshbeard/walsh/cmd/list"
 	"github.com/joshbeard/walsh/cmd/set"
 	"github.com/joshbeard/walsh/cmd/view"
-	"github.com/joshbeard/walsh/internal/cli"
 )
 
 // Set at build time
@@ -23,18 +22,9 @@ var (
 )
 
 func Command() *cobra.Command {
-	banner, err := cli.Banner(
-		fmt.Sprintf("walsh %s - ", version) +
-			"a tool for managing wallpapers\n" +
-			"https://github.com/joshbeard/walsh")
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	rootCmd := &cobra.Command{
 		Use:   "walsh",
 		Short: "walsh is a tool for managing wallpapers",
-		Long:  banner,
 		Version: fmt.Sprintf("%s, commit %s, built at %s",
 			version, commit, date) +
 			"\nhttps://github.com/joshbeard/walsh" +
