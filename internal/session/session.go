@@ -185,7 +185,18 @@ func (s *Session) SetWallpaper(sources []string, displayStr string) error {
 	processDisplay := func(d Display) {
 		defer wg.Done()
 		for i := 0; i < MaxRetries; i++ {
-			image, err := source.Random(images, s.cfg.CacheDir)
+			var image source.Image
+			// Synchronize access to the images slice
+			mu.Lock()
+			if len(images) > 0 {
+				image, err = source.Random(images, s.cfg.CacheDir)
+			} else {
+				mu.Unlock()
+				errChan <- errors.New("no images available")
+				return
+			}
+			mu.Unlock()
+
 			if err != nil {
 				log.Errorf("Error selecting random image for display %s: %s", d.Name, err)
 				time.Sleep(1 * time.Second)
