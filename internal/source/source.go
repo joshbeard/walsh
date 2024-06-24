@@ -63,17 +63,15 @@ func GetImages(srcs []string) ([]Image, error) {
 	var results, images []Image
 
 	for _, src := range srcs {
-		log.Debugf("getting images from source '%s'", src)
 		switch {
-		case util.IsFilePath(src):
-			log.Debugf("source '%s' is a file", src)
-			results, err = getDirImages(src)
+		case strings.HasPrefix(src, SourceSSH.String()):
+			results, err = getSSHImages(src)
 		case strings.HasPrefix(src, SourceDirectory.String()):
 			results, err = getDirImages(src)
 		case strings.HasPrefix(src, SourceList.String()):
 			results, err = getListImages(src)
-		case strings.HasPrefix(src, SourceSSH.String()):
-			results, err = getSSHImages(src)
+		case util.IsFilePath(src):
+			results, err = getDirImages(src)
 		default:
 			return nil, fmt.Errorf("invalid source format: %s", src)
 		}
