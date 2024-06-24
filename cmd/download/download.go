@@ -43,6 +43,7 @@ func BingCommand() *cobra.Command {
 		Use:     "bing [gosimac args]",
 		Aliases: []string{"b"},
 		Short:   "download wallpapers from Bing",
+		Example: "  walsh download bing -- -n 10",
 		Run: func(cmd *cobra.Command, args []string) {
 			sess, dest := commonSetup(cmd, args, dlOptions{})
 
@@ -68,6 +69,7 @@ func UnsplashCommand(opts dlOptions) *cobra.Command {
 		Use:     "unsplash [gosimac args]",
 		Aliases: []string{"u"},
 		Short:   "download wallpapers from Unsplash",
+		Example: "  walsh download unsplash -- --query 'nature' --orientation 'landscape'",
 		Run: func(cmd *cobra.Command, args []string) {
 			sess, dest := commonSetup(cmd, args, opts)
 
