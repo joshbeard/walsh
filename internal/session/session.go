@@ -177,14 +177,6 @@ func (s *Session) SetWallpaper(sources []string, displayStr string) error {
 	errChan := make(chan error, len(displays))
 	defer close(errChan)
 
-	concurrent := true
-	// Workaround for setting wallpapers on X11 sessions. Setting wallpapers
-	// on all displays concurrently often only sets it on one and leaves the
-	// others black. This is a workaround to set wallpapers sequentially.
-	if s.sessType == SessionTypeX11Unknown {
-		concurrent = false
-	}
-
 	// Function to process each display
 	processDisplay := func(d Display) {
 		defer wg.Done()
@@ -225,13 +217,8 @@ func (s *Session) SetWallpaper(sources []string, displayStr string) error {
 	}
 
 	for _, d := range displays {
-		if concurrent {
-			wg.Add(1)
-			go processDisplay(d)
-		} else {
-			wg.Add(1)
-			processDisplay(d)
-		}
+		wg.Add(1)
+		go processDisplay(d)
 	}
 
 	wg.Wait()
