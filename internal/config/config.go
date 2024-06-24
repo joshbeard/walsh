@@ -132,6 +132,13 @@ func (c Config) createDirs() error {
 		}
 	}
 
+	if !util.FileExists(c.DownloadDest) {
+		err := util.MkDir(c.DownloadDest)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -142,9 +149,13 @@ func defaultConfig() *Config {
 		HistoryFile:   xdg.DataHome + "/walsh/history.json",
 		ListsDir:      xdg.DataHome + "/walsh/lists",
 		CacheDir:      xdg.CacheHome + "/walsh/cache",
+		DownloadDest:  xdg.Home + "/Pictures/Wallpapers",
 		HistorySize:   50,
 		CacheSize:     50,
 		Interval:      0,
+		Sources: []string{
+			"dir://" + xdg.Home + "/Pictures/Wallpapers",
+		},
 	}
 }
 
@@ -159,5 +170,29 @@ func applyDefaults(cfg *Config, defaults *Config) {
 
 	if cfg.CacheSize == 0 {
 		cfg.CacheSize = defaults.CacheSize
+	}
+
+	if cfg.DownloadDest == "" {
+		cfg.DownloadDest = defaults.DownloadDest
+	}
+
+	if cfg.BlacklistFile == "" {
+		cfg.BlacklistFile = defaults.BlacklistFile
+	}
+
+	if cfg.CurrentFile == "" {
+		cfg.CurrentFile = defaults.CurrentFile
+	}
+
+	if cfg.HistoryFile == "" {
+		cfg.HistoryFile = defaults.HistoryFile
+	}
+
+	if cfg.ListsDir == "" {
+		cfg.ListsDir = defaults.ListsDir
+	}
+
+	if cfg.Sources == nil {
+		cfg.Sources = defaults.Sources
 	}
 }

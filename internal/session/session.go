@@ -179,6 +179,7 @@ func (s *Session) SetWallpaper(sources []string, displayStr string) error {
 	var wg sync.WaitGroup
 	errChan := make(chan error, len(displays))
 	defer close(errChan)
+	var mu sync.Mutex
 
 	// Function to process each display
 	processDisplay := func(d Display) {
@@ -199,10 +200,13 @@ func (s *Session) SetWallpaper(sources []string, displayStr string) error {
 				continue
 			}
 
+			mu.Lock()
+
 			err = s.WriteCurrent(d, image)
 			if err != nil {
 				log.Errorf("Error saving to history for display %s: %s", d.Name, err)
 				errChan <- err
+				mu.Unlock()
 				return
 			}
 
@@ -210,8 +214,11 @@ func (s *Session) SetWallpaper(sources []string, displayStr string) error {
 			if err != nil {
 				log.Errorf("Error writing to history for display %s: %s", d.Name, err)
 				errChan <- err
+				mu.Unlock()
 				return
 			}
+
+			mu.Unlock()
 
 			log.Infof("Set wallpaper for display %s: %s", d.Name, image.Path)
 			return

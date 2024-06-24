@@ -5,10 +5,10 @@ package session
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"strings"
 
+	"github.com/charmbracelet/log"
 	"github.com/joshbeard/walsh/internal/util"
 )
 
@@ -56,7 +56,7 @@ func (m macos) GetDisplays() ([]Display, error) {
 	}
 
 	var displays []Display
-	for i, display := range spDisplays {
+	for _, display := range spDisplays {
 		displayMap, ok := display.(map[string]interface{})
 		if !ok {
 			log.Fatalf("Error asserting display as map")
@@ -65,11 +65,12 @@ func (m macos) GetDisplays() ([]Display, error) {
 		if !ok {
 			log.Fatalf("Error asserting spdisplays_ndrvs as array")
 		}
-		fmt.Printf("Display %d has %d items in 'spdisplays_ndrvs'\n", i+1, len(ndrvs))
 
 		for ii := range ndrvs {
-			displays = append(displays, Display{Name: fmt.Sprintf("%d", ii+1)})
+			displays = append(displays, Display{Index: ii + 1, Name: fmt.Sprintf("%d", ii+1)})
 		}
+
+		log.Debugf("Found %d displays", len(ndrvs))
 	}
 
 	return displays, nil

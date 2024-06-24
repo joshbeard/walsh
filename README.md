@@ -254,7 +254,8 @@ The default configuration is as follows:
 
 ```yaml
 # A list of directories or URIs to source images from.
-sources: []
+sources:
+  - ${XDG_HOME}/Pictures/Wallpapers
 
 # The file to track the currently set wallpaper.
 current: ${XDG_DATA_HOME}/walsh/current.json
@@ -281,9 +282,9 @@ cache_size: 50
 # The interval in seconds to set a new wallpaper. Set to 0 to disable.
 interval: 0
 
-# A destination URI to download images to. This is used by the 'download'
-# command. Uses the same syntax as the 'sources' list.
-download_dest: ""
+# A destination path to download images to. This is used by the 'download'
+# command.
+download_dest: ${XDG_HOME}/Pictures/Wallpapers
 ```
 
 * On Linux and BSD, `${XDG_CONFIG_HOME}` defaults to `~/.config`,
