@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.6 - 2024-06-24
+
+- Add --no-move arg to download @joshbeard (#37)
+- Improve ordering of source determination @joshbeard (#36)
+- Improve source and target @joshbeard (#35)
+- [docs] improve banner @joshbeard (#34)
+- Fix date @joshbeard (#33)
+
 ## 0.4.5 - 2024-06-24
 
 - Log output when downloading @joshbeard (#32)
