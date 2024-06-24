@@ -5,7 +5,6 @@ import (
 
 	"github.com/charmbracelet/log"
 	"github.com/joshbeard/walsh/internal/cli"
-	"github.com/joshbeard/walsh/internal/session"
 	"github.com/spf13/cobra"
 )
 
@@ -33,14 +32,7 @@ func Command() *cobra.Command {
 			"  walsh s 1 path/to/images\n" +
 			"  walsh set --interval 60 -d 0",
 		Run: func(cmd *cobra.Command, args []string) {
-			display, sess, err := cli.Setup(cmd, args)
-			if err != nil {
-				log.Fatal(err)
-			}
-			opts.display = display
-
-			err = setWallpaper(sess, opts)
-			if err != nil {
+			if err := setWallpaper(cmd, args, opts); err != nil {
 				log.Fatalf("Error: %v", err)
 			}
 		},
@@ -58,8 +50,14 @@ func Command() *cobra.Command {
 	return cmd
 }
 
-func setWallpaper(sess *session.Session, opts setOptions) error {
-	err := sess.SetWallpaper(opts.srcs, opts.display)
+func setWallpaper(cmd *cobra.Command, args []string, opts setOptions) error {
+	display, sess, err := cli.Setup(cmd, args)
+	if err != nil {
+		log.Fatal(err)
+	}
+	opts.display = display
+
+	err = sess.SetWallpaper(opts.srcs, opts.display)
 	if err != nil {
 		log.Errorf("Error setting wallpaper: %s", err)
 		return err
@@ -73,6 +71,12 @@ func setWallpaper(sess *session.Session, opts setOptions) error {
 	defer ticker.Stop()
 
 	for range ticker.C {
+		display, sess, err := cli.Setup(cmd, args)
+		if err != nil {
+			log.Fatal(err)
+		}
+		opts.display = display
+
 		if err := sess.SetWallpaper(opts.srcs, opts.display); err != nil {
 			log.Errorf("Error setting wallpaper: %s", err)
 			return err

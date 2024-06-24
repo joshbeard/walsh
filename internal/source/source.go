@@ -302,9 +302,9 @@ func downloadSSHImage(src Image, dest string) (Image, error) {
 	sshCmd := fmt.Sprintf("scp %s:\"%s\" \"%s\"", addr, path, dest)
 
 	// Run the SSH command.
-	_, err := util.RunCmd(sshCmd)
+	result, err := util.RunCmd(sshCmd)
 	if err != nil {
-		return Image{}, fmt.Errorf("failed to run SSH command: %w", err)
+		return Image{}, fmt.Errorf("failed to run SSH command: %w output: %s", err, result)
 	}
 
 	checksum, err := util.Sha256(dest)
