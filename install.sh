@@ -57,7 +57,26 @@ curl -sLO "$CHECKSUMS_URL"
 PACKAGE_FILE="walsh_${LATEST_TAG}_${OS}_${ARCH}.tar.gz"
 CHECKSUM=$(grep "$PACKAGE_FILE" checksums.txt | awk '{print $1}')
 
-if ! echo "$CHECKSUM $PACKAGE_FILE" | sha256sum -c -; then
+# Detect the operating system and set the appropriate checksum command
+OS_TYPE=$(uname)
+case "$OS_TYPE" in
+  Darwin)
+    checksum_cmd="shasum -a 256"
+    ;;
+  Linux)
+    checksum_cmd="sha256sum"
+    ;;
+  FreeBSD | OpenBSD)
+    checksum_cmd="sha256"
+    ;;
+  *)
+    echo "Unsupported OS: $OS_TYPE"
+    exit 1
+    ;;
+esac
+
+# Verify the checksum
+if ! echo "$CHECKSUM  $PACKAGE_FILE" | $checksum_cmd -c -; then
   echo "Checksum verification failed."
   exit 1
 fi
