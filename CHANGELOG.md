@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.7 - 2024-06-25
+
+- ci: add on.push rule for codeql @joshbeard (#41)
+- Use go x.y.z version @joshbeard (#40)
+- fix: don't panic on unknown session @joshbeard (#39)
+- [docs] add title image @joshbeard (#38)
+
 ## 0.4.6 - 2024-06-24
 
 - Add --no-move arg to download @joshbeard (#37)
