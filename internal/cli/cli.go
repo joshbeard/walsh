@@ -17,7 +17,10 @@ func Setup(cmd *cobra.Command, args []string) (string, *session.Session, error) 
 	}
 
 	// Create session
-	sess := session.NewSession(cfg)
+	sess, err := session.NewSession(cfg)
+	if err != nil {
+		return "", nil, fmt.Errorf("error creating session: %w", err)
+	}
 
 	displays := sess.Displays()
 	display, _ := cmd.Flags().GetString("display")
