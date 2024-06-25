@@ -82,10 +82,10 @@ type SetWallpaperParams struct {
 }
 
 // NewSession creates a new session based on the current session type.
-func NewSession(cfg *config.Config) *Session {
+func NewSession(cfg *config.Config) (*Session, error) {
 	sessType, err := detect()
 	if err != nil {
-		return nil
+		return nil, err
 	}
 
 	var svc SessionProvider
@@ -100,13 +100,13 @@ func NewSession(cfg *config.Config) *Session {
 		svc = &sway{}
 	default:
 		log.Warnf("Unknown session type: %d", sessType)
-		return nil
+		return nil, errors.New("unknown session type")
 	}
 
 	display, err := svc.GetDisplays()
 	if err != nil {
 		log.Errorf("Error getting displays: %s", err)
-		return nil
+		return nil, err
 	}
 
 	return &Session{
@@ -114,7 +114,7 @@ func NewSession(cfg *config.Config) *Session {
 		sessType: sessType,
 		displays: display,
 		cfg:      cfg,
-	}
+	}, nil
 }
 
 // Config returns the session's config.
