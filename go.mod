@@ -1,6 +1,6 @@
 module github.com/joshbeard/walsh
 
-go 1.21
+go 1.22.4
 
 require (
 	github.com/adrg/xdg v0.4.0
@@ -10,6 +10,7 @@ require (
 	github.com/golangci/golangci-lint v1.59.1
 	github.com/segmentio/golines v0.12.2
 	github.com/spf13/cobra v1.8.1
+	golang.org/x/exp v0.0.0-20240613232115-7f521ea00fb8
 	golang.org/x/vuln v1.1.2
 	gopkg.in/yaml.v3 v3.0.1
 	mvdan.cc/gofumpt v0.6.0
@@ -194,7 +195,6 @@ require (
 	go.uber.org/multierr v1.6.0 // indirect
 	go.uber.org/zap v1.24.0 // indirect
 	golang.org/x/crypto v0.24.0 // indirect
-	golang.org/x/exp v0.0.0-20240613232115-7f521ea00fb8 // indirect
 	golang.org/x/exp/typeparams v0.0.0-20240314144324-c7f7c6466f7f // indirect
 	golang.org/x/mod v0.18.0 // indirect
 	golang.org/x/sync v0.7.0 // indirect
