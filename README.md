@@ -1,6 +1,4 @@
-<p align=center>
-<img align="center" width="396" height="102" src=".doc/title.png">
-</p>
+# walsh
 
 Walsh is a niche CLI wallpaper manager for randomizing images on multiple
 displays from various configured sources. It supports saving images to lists,
