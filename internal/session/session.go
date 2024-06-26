@@ -23,6 +23,14 @@ import (
 // wallpaper.
 const MaxRetries = 6
 
+// defaultViewCmds are the default commands to view an image.
+var defaultViewCmds = []string{
+	`xdg-open '{{path}}'`,
+	`feh --scale-down --auto-zoom '{{path}}'`,
+	`eog '{{path}}'`,
+	`eom '{{path}}'`,
+}
+
 // Session is a struct for managing the desktop session's wallpaper.
 type Session struct {
 	displays []Display
@@ -91,13 +99,13 @@ func NewSession(cfg *config.Config) (*Session, error) {
 	var svc SessionProvider
 	switch sessType {
 	case SessionTypeHyprland:
-		svc = &hyprland{}
+		svc = NewHyprland(cfg)
 	case SessionTypeX11Unknown:
-		svc = &xorg{}
+		svc = NewXorg(cfg)
 	case SessionTypeMacOS:
-		svc = &macos{}
+		svc = NewMacOS(cfg)
 	case SessionTypeSway:
-		svc = &sway{}
+		svc = NewSway(cfg)
 	default:
 		log.Warnf("Unknown session type: %d", sessType)
 		return nil, errors.New("unknown session type")
@@ -389,22 +397,41 @@ func (s Session) GetCurrentWallpaper(display string) (string, error) {
 // View opens an image in the default image viewer.
 func (s Session) View(image string) error {
 	log.Debugf("Viewing %s", image)
-
-	if isMacOS() {
-		_, err := util.RunCmd(fmt.Sprintf("open -a Preview '%s'", image))
-		if err != nil {
-			return err
-		}
-
-		return nil
+	cmd, err := s.getViewCommand(image)
+	if err != nil {
+		return err
 	}
 
-	_, err := util.RunCmd(fmt.Sprintf("eog '%s'", image))
+	_, err = util.RunCmd(cmd)
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func parseViewCmd(cmd, path string) string {
+	return strings.ReplaceAll(cmd, "{{path}}", path)
+}
+
+func (s Session) getViewCommand(image string) (string, error) {
+	if s.cfg.ViewCommand != "" {
+		return parseViewCmd(s.cfg.ViewCommand, image), nil
+	}
+
+	if isMacOS() {
+		return fmt.Sprintf("open -a Preview '%s'", image), nil
+	}
+
+	for _, cmd := range defaultViewCmds {
+		if _, err := exec.LookPath(strings.Split(cmd, " ")[0]); err == nil {
+			cmd = parseViewCmd(cmd, image)
+
+			return cmd, nil
+		}
+	}
+
+	return "", errors.New("no view command found")
 }
 
 // WriteCurrent writes the current wallpaper for a given display to the
@@ -420,7 +447,7 @@ func (s Session) WriteCurrent(display Display, path source.Image) error {
 	// Ensure the file exists before reading
 	if !util.FileExists(s.cfg.CurrentFile) {
 		// Create the file if it doesn't exist
-		err = os.WriteFile(s.cfg.CurrentFile, []byte("{}"), 0644)
+		err = os.WriteFile(s.cfg.CurrentFile, []byte("{}"), 0o644)
 		if err != nil {
 			return fmt.Errorf("failed to create the file: %w", err)
 		}
@@ -459,7 +486,7 @@ func (s Session) WriteCurrent(display Display, path source.Image) error {
 	}
 
 	// Write the updated content back to the file
-	err = os.WriteFile(s.cfg.CurrentFile, updatedBytes, 0644)
+	err = os.WriteFile(s.cfg.CurrentFile, updatedBytes, 0o644)
 	if err != nil {
 		return fmt.Errorf("failed to write the updated content to the file: %w", err)
 	}
@@ -534,7 +561,7 @@ func (s Session) WriteList(file string, image source.Image) error {
 	}
 
 	// Write the updated content back to the file
-	err = os.WriteFile(file, updatedBytes, 0644)
+	err = os.WriteFile(file, updatedBytes, 0o644)
 	if err != nil {
 		return fmt.Errorf("failed to write the updated content to the file: %w", err)
 	}
@@ -579,7 +606,7 @@ func (s Session) TrimHistory() error {
 	}
 
 	// Write the updated content back to the file
-	err = os.WriteFile(s.cfg.HistoryFile, updatedBytes, 0644)
+	err = os.WriteFile(s.cfg.HistoryFile, updatedBytes, 0o644)
 	if err != nil {
 		return fmt.Errorf("failed to write the updated content to the file: %w", err)
 	}

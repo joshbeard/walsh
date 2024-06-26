@@ -46,10 +46,16 @@ func getSwwwWallpaper(display, _ Display) (string, error) {
 	return strings.TrimSpace(parts[1]), nil
 }
 
-func setWaylandWallpaper(path string, display Display) error {
-	cmd, err := getSetCmd(defaultWaylandSetCmds, path, display.Name)
-	if err != nil {
-		return fmt.Errorf("error setting wallpaper: %w", err)
+func setWaylandWallpaper(path string, display Display, customCmd string) error {
+	var err error
+	cmd := ""
+	if customCmd != "" {
+		cmd = parseSetCmd(customCmd, path, display.Name)
+	} else {
+		cmd, err = getSetCmd(defaultWaylandSetCmds, path, display.Name)
+		if err != nil {
+			return fmt.Errorf("error getting wallpaper set command: %w", err)
+		}
 	}
 
 	if _, err = util.RunCmd(cmd); err != nil {

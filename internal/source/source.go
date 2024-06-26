@@ -108,7 +108,7 @@ func Random(images []Image, tmpDir string) (Image, error) {
 	if strings.HasPrefix(image.Source, SourceSSH.String()) {
 		// Create tmpDir if it doesn't exist.
 		if !util.FileExists(tmpDir) {
-			err = os.Mkdir(tmpDir, 0700)
+			err = os.Mkdir(tmpDir, 0o700)
 			if err != nil {
 				return Image{}, fmt.Errorf("failed to create temporary directory: %w", err)
 			}

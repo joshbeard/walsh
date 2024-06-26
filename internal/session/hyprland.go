@@ -6,17 +6,24 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/log"
+	"github.com/joshbeard/walsh/internal/config"
 	"github.com/joshbeard/walsh/internal/util"
 )
 
-type hyprland struct{}
+type hyprland struct {
+	cfg *config.Config
+}
 
 var _ SessionProvider = &hyprland{}
+
+func NewHyprland(cfg *config.Config) SessionProvider {
+	return &hyprland{cfg: cfg}
+}
 
 // SetWallpaper sets the wallpaper for the specified display in a Hyprland
 // session.
 func (h hyprland) SetWallpaper(path string, display Display) error {
-	return setWaylandWallpaper(path, display)
+	return setWaylandWallpaper(path, display, h.cfg.SetCommand)
 }
 
 // GetDisplays returns a list of displays in a Hyprland session.

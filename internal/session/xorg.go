@@ -7,10 +7,13 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/log"
+	"github.com/joshbeard/walsh/internal/config"
 	"github.com/joshbeard/walsh/internal/util"
 )
 
-type xorg struct{}
+type xorg struct {
+	cfg *config.Config
+}
 
 var _ SessionProvider = &xorg{}
 
@@ -21,7 +24,21 @@ var defaultXorgSetCmds = []string{
 	`xsetbg -display {{display}} '{{path}}'`,
 }
 
+func NewXorg(cfg *config.Config) SessionProvider {
+	return &xorg{cfg: cfg}
+}
+
 func (x xorg) SetWallpaper(path string, display Display) error {
+	if x.cfg.SetCommand != "" {
+		cmd := parseSetCmd(x.cfg.SetCommand, path, display.Name)
+		_, err := util.RunCmd(cmd)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}
+
 	cmd, err := getSetCmd(defaultXorgSetCmds, path, display.Name)
 	if err != nil {
 		return err
