@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.0 - 2024-06-26
+
+- Custom set and view commands @joshbeard (#43)
+- ci: add deepsource config @joshbeard (#42)
+
 ## 0.4.7 - 2024-06-25
 
 - ci: add on.push rule for codeql @joshbeard (#41)
