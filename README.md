@@ -221,6 +221,22 @@ interval: 0
 # 'download' # command.
 # Specify a path with optional environment variables or an SSH URI.
 download_dest: ${XDG_HOME}/Pictures/Wallpapers
+
+# set_command is the command used to set the specified wallpaper.
+# Use {{path}} to specify the path to the wallpaper and {{display}} to specify
+# the display number.
+# e.g. swww img '{{path}}' --outputs '{{display}}'
+# By default, this uses 'swww' on Wayland, 'nitrogen' on Xorg, and falls back
+# to looking for 'feh', 'xwallpaper', 'xsetbg'. Native system calls via
+# AppleScript are used on macOS.
+set_command: ""
+
+# view_command is the command used to view the specified wallpaper.
+# Use {{path}} to specify the path to the wallpaper.
+# e.g. feh --bg-fill '{{path}}'
+# By default, this uses 'xdg-open' on Linux/BSD and falls back to looking for
+# feh, eog, eom. Preview is used by default on macOS.
+view_command: ""
 ```
 
 * On Linux and BSD, `${XDG_CONFIG_HOME}` defaults to `~/.config`,

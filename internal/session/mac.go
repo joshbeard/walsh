@@ -8,12 +8,19 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/log"
+	"github.com/joshbeard/walsh/internal/config"
 	"github.com/joshbeard/walsh/internal/util"
 )
 
-type macos struct{}
+type macos struct {
+	cfg *config.Config
+}
 
 var _ SessionProvider = &macos{}
+
+func NewMacOS(cfg *config.Config) SessionProvider {
+	return &macos{cfg: cfg}
+}
 
 // isMacOS checks if the current session is macOS.
 func isMacOS() bool {

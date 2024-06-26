@@ -141,7 +141,7 @@ func setupLogger(level, file string) (*log.Logger, *os.File, error) {
 	logH := os.Stderr
 	if file != "" {
 		var err error
-		logH, err = os.OpenFile(file, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+		logH, err = os.OpenFile(file, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to open log file: %w", err)
 		}

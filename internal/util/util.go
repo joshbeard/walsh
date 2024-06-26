@@ -109,7 +109,7 @@ func IsFilePath(path string) bool {
 
 func MkDir(path string) error {
 	if !FileExists(path) {
-		err := os.MkdirAll(path, 0755)
+		err := os.MkdirAll(path, 0o755)
 		if err != nil {
 			return fmt.Errorf("failed to create directory: %w", err)
 		}

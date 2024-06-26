@@ -19,6 +19,8 @@ type Config struct {
 	DownloadDest            string   `yaml:"download_dest"`
 	Interval                int      `yaml:"interval"`
 	DeleteBlacklistedImages bool     `yaml:"delete_blacklisted_images"`
+	SetCommand              string   `yaml:"set_command"`
+	ViewCommand             string   `yaml:"view_command"`
 }
 
 type CLIFlags struct {
