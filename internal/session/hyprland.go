@@ -1,9 +1,8 @@
 package session
 
 import (
+	"encoding/json"
 	"fmt"
-	"regexp"
-	"strings"
 
 	"github.com/charmbracelet/log"
 	"github.com/joshbeard/walsh/internal/config"
@@ -26,10 +25,36 @@ func (h hyprland) SetWallpaper(path string, display Display) error {
 	return setWaylandWallpaper(path, display, h.cfg.SetCommand)
 }
 
+func (h hyprland) getInstance() (string, error) {
+	instances, err := util.RunCmd(`hyprctl -j instances`)
+	if err != nil {
+		return "", fmt.Errorf("failed to run hyprctl -j instances: %w", err)
+	}
+	instancesJSON := []map[string]interface{}{}
+	err = json.Unmarshal([]byte(instances), &instancesJSON)
+	if err != nil {
+		return "", fmt.Errorf("failed to unmarshal hyprctl -j instances: %w", err)
+	}
+
+	log.Debugf("found %d hyprland instances", len(instancesJSON))
+
+	// Asume instance 0 for now
+	instance := instancesJSON[0]
+	instanceID := instance["instance"].(string)
+
+	return instanceID, nil
+}
+
 // GetDisplays returns a list of displays in a Hyprland session.
 // This uses the `hyprctl monitors` command to get a list of displays.
 func (h hyprland) GetDisplays() ([]Display, error) {
-	result, err := util.RunCmd(`hyprctl monitors`)
+	instance, err := h.getInstance()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get instance: %w", err)
+	}
+
+	monitorCmd := fmt.Sprintf("hyprctl -i %s -j monitors", instance)
+	result, err := util.RunCmd(monitorCmd)
 	if err != nil {
 		return nil, fmt.Errorf("failed to run hyprctl monitors: %w", err)
 	}
@@ -47,26 +72,19 @@ func (h hyprland) GetCurrentWallpaper(display, _ Display) (string, error) {
 // parseDisplays parses the output of `hyprctl monitors` and returns a list of
 // displays in their struct form.
 func (h hyprland) parseDisplays(output string) ([]Display, error) {
-	lines := strings.Split(strings.TrimSpace(output), "\n")
-	var displays []Display
-	re := regexp.MustCompile(`^Monitor (\S+) \(ID (\d+)\):`)
-
-	idx := 0
-	for _, line := range lines {
-		if matches := re.FindStringSubmatch(line); matches != nil {
-			displays = append(displays, Display{
-				Index: idx,
-				Name:  matches[1],
-			})
-
-			idx++
-		}
+	jsonOutput := []map[string]interface{}{}
+	err := json.Unmarshal([]byte(output), &jsonOutput)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal hyprctl monitors: %w", err)
 	}
 
-	if len(displays) == 0 {
-		return nil, fmt.Errorf("no displays found")
+	displays := []Display{}
+	for _, monitor := range jsonOutput {
+		displays = append(displays, Display{
+			Name:  monitor["name"].(string),
+			Index: int(monitor["id"].(float64)),
+		})
 	}
 
-	log.Debugf("Displays: %+v", displays)
 	return displays, nil
 }
