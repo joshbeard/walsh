@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.1 - 2024-06-30
+
+- fix: discover hyprland instances @joshbeard (#44)
+
 ## 0.5.0 - 2024-06-26
 
 - Custom set and view commands @joshbeard (#43)
