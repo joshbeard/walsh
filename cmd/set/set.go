@@ -51,15 +51,32 @@ func Command() *cobra.Command {
 }
 
 func setWallpaper(cmd *cobra.Command, args []string, opts setOptions) error {
-	display, sess, err := cli.Setup(cmd, args)
+	maxRetries := 3                  // Maximum number of retries
+	retryInterval := 2 * time.Second // Interval between retries
+
+	retry := func(operation func() error) error {
+		var err error
+		for i := 0; i < maxRetries; i++ {
+			err = operation()
+			if err == nil {
+				return nil
+			}
+			log.Errorf("Error encountered: %s. Retrying in %v...", err, retryInterval)
+			time.Sleep(retryInterval)
+		}
+		return err
+	}
+
+	err := retry(func() error {
+		display, sess, err := cli.Setup(cmd, args)
+		if err != nil {
+			return err
+		}
+		opts.display = display
+		return sess.SetWallpaper(opts.srcs, opts.display)
+	})
 	if err != nil {
 		log.Fatal(err)
-	}
-	opts.display = display
-
-	err = sess.SetWallpaper(opts.srcs, opts.display)
-	if err != nil {
-		log.Errorf("Error setting wallpaper: %s", err)
 		return err
 	}
 
@@ -71,14 +88,16 @@ func setWallpaper(cmd *cobra.Command, args []string, opts setOptions) error {
 	defer ticker.Stop()
 
 	for range ticker.C {
-		display, sess, err := cli.Setup(cmd, args)
+		err := retry(func() error {
+			display, sess, err := cli.Setup(cmd, args)
+			if err != nil {
+				return err
+			}
+			opts.display = display
+			return sess.SetWallpaper(opts.srcs, opts.display)
+		})
 		if err != nil {
 			log.Fatal(err)
-		}
-		opts.display = display
-
-		if err := sess.SetWallpaper(opts.srcs, opts.display); err != nil {
-			log.Errorf("Error setting wallpaper: %s", err)
 			return err
 		}
 		log.Infof("Next wallpaper change in %d seconds", opts.interval)
