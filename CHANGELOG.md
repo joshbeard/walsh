@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.2 - 2024-07-23
+
+- Bump golang.org/x/vuln from 1.1.2 to 1.1.3 @dependabot (#47)
+- Bump github.com/adrg/xdg from 0.4.0 to 0.5.0 @dependabot (#46)
+- Bump actions/setup-go from 5.0.1 to 5.0.2 @dependabot (#45)
+- fix: fault tolerance @joshbeard (#48)
+
 ## 0.5.1 - 2024-06-30
 
 - fix: discover hyprland instances @joshbeard (#44)
