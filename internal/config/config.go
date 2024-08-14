@@ -159,7 +159,7 @@ func defaultConfig() *Config {
 	}
 }
 
-func applyDefaults(cfg *Config, defaults *Config) {
+func applyDefaults(cfg, defaults *Config) {
 	if cfg.HistorySize == 0 {
 		cfg.HistorySize = defaults.HistorySize
 	}
