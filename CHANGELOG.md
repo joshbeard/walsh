@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.3 - 2024-08-14
+
+- fix: don't try to create download dest @joshbeard (#49)
+
 ## 0.5.2 - 2024-07-23
 
 - Bump golang.org/x/vuln from 1.1.2 to 1.1.3 @dependabot (#47)
