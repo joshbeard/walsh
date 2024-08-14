@@ -3,6 +3,7 @@ module github.com/joshbeard/walsh
 go 1.22.4
 
 require (
+	fyne.io/systray v1.11.0
 	github.com/adrg/xdg v0.5.0
 	github.com/boumenot/gocover-cobertura v1.2.0
 	github.com/charmbracelet/log v0.4.0
@@ -78,6 +79,7 @@ require (
 	github.com/go-viper/mapstructure/v2 v2.0.0 // indirect
 	github.com/go-xmlfmt/xmlfmt v1.1.2 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
+	github.com/godbus/dbus/v5 v5.1.0 // indirect
 	github.com/gofrs/flock v0.8.1 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/golangci/dupl v0.0.0-20180902072040-3e9179ac440a // indirect

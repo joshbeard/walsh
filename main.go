@@ -15,6 +15,7 @@ import (
 	"github.com/joshbeard/walsh/cmd/blacklist"
 	"github.com/joshbeard/walsh/cmd/download"
 	"github.com/joshbeard/walsh/cmd/list"
+	"github.com/joshbeard/walsh/cmd/run"
 	"github.com/joshbeard/walsh/cmd/set"
 	"github.com/joshbeard/walsh/cmd/view"
 )
@@ -70,6 +71,7 @@ func Command() *cobra.Command {
 	rootCmd.AddCommand(download.Command())
 	rootCmd.AddCommand(view.Command())
 	rootCmd.AddCommand(list.AddCommand())
+	rootCmd.AddCommand(run.Command())
 
 	rootCmd.PersistentFlags().StringP("config", "c", "", "path to config file")
 	rootCmd.PersistentFlags().StringP("display", "d", "",
