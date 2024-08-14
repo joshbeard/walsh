@@ -132,12 +132,12 @@ func (c Config) createDirs() error {
 		}
 	}
 
-	if !util.FileExists(c.DownloadDest) {
-		err := util.MkDir(c.DownloadDest)
-		if err != nil {
-			return err
-		}
-	}
+	// if !util.FileExists(c.DownloadDest) {
+	// 	err := util.MkDir(c.DownloadDest)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// }
 
 	return nil
 }
