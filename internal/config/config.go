@@ -110,7 +110,7 @@ func createNewConfig(path string) (*Config, error) {
 	return cfg, nil
 }
 
-func (c Config) createDirs() error {
+func (c *Config) createDirs() error {
 	if !util.FileExists(xdg.DataHome) {
 		err := util.MkDir(xdg.DataHome)
 		if err != nil {
