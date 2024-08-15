@@ -2,6 +2,8 @@ package list
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -25,9 +27,62 @@ func Command() *cobra.Command {
 	}
 
 	cmd.AddCommand(AddCommand())
-	cmd.AddCommand(ShowCommand())
 	cmd.AddCommand(ViewCommand())
+	cmd.AddCommand(lsCommand())
+	cmd.AddCommand(editCommand())
 	cmd.PersistentFlags().StringVarP(&listName, "list", "l", "", "list name")
+
+	return cmd
+}
+
+func lsCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "ls",
+		Short:   "view wallpaper lists",
+		Aliases: []string{"list", "show"},
+		Example: "  List all lists:\n" +
+			"    walsh list ls\n\n" +
+			"  List wallpapers in a specific list:\n" +
+			"    walsh list ls mylist",
+		Run: func(cmd *cobra.Command, args []string) {
+			// List name is provided using the flag or it's the last argument.
+			if listName == "" && len(args) > 0 {
+				listName = args[len(args)-1]
+				args = args[:len(args)-1]
+			}
+
+			_, sess, err := cli.Setup(cmd, args)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			if listName == "" {
+				path := sess.Config().ListsDir
+				files, err := os.ReadDir(path)
+				if err != nil {
+					log.Fatal(err)
+				}
+
+				printBanner(fmt.Sprintf("Lists (%d)", len(files)))
+				for _, file := range files {
+					fmt.Println(strings.TrimSuffix(file.Name(), ".json"))
+				}
+
+				return
+			}
+
+			path := filepath.Join(sess.Config().ListsDir, listName+".json")
+			list, err := sess.ReadList(path)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			printBanner(fmt.Sprintf("%s (%d)", listName, len(list)))
+			for i, wp := range list {
+				fmt.Printf("%d: %s\n", i+1, wp.Source)
+			}
+		},
+	}
 
 	return cmd
 }
@@ -81,19 +136,24 @@ func AddCommand() *cobra.Command {
 	return cmd
 }
 
-func ShowCommand() *cobra.Command {
+// open file in $EDITOR
+func editCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "show",
-		Aliases: []string{"s"},
-		Short:   "show wallpapers in list",
-		Example: "  walsh list show --list mylist\n" +
-			"  walsh list show mylist\n" +
-			"  walsh l s mylist",
+		Use:     "edit",
+		Aliases: []string{"e"},
+		Short:   "edit wallpaper list",
+		Example: "  walsh list edit --list mylist\n" +
+			"  walsh list edit mylist\n" +
+			"  walsh l e mylist",
 		Run: func(cmd *cobra.Command, args []string) {
 			// List name is provided using the flag or it's the last argument.
-			if listName == "" {
+			if listName == "" && len(args) > 0 {
 				listName = args[len(args)-1]
 				args = args[:len(args)-1]
+			}
+
+			if listName == "" {
+				log.Fatal("list name is required")
 			}
 
 			_, sess, err := cli.Setup(cmd, args)
@@ -101,15 +161,19 @@ func ShowCommand() *cobra.Command {
 				log.Fatal(err)
 			}
 
-			path := filepath.Join(sess.Config().ListsDir, listName+".json")
-			list, err := sess.ReadList(path)
-			if err != nil {
-				log.Fatal(err)
+			editor := os.Getenv("EDITOR")
+			if editor == "" {
+				log.Fatal("EDITOR environment variable not set")
 			}
 
-			printBanner(fmt.Sprintf("%s (%d)", listName, len(list)))
-			for i, wp := range list {
-				fmt.Printf("%d: %s\n", i+1, wp.Source)
+			path := filepath.Join(sess.Config().ListsDir, listName+".json")
+			edit := exec.Command(editor, path)
+			edit.Stdout = os.Stdout
+			edit.Stdin = os.Stdin
+			edit.Stderr = os.Stderr
+
+			if err := edit.Run(); err != nil {
+				log.Fatal(err)
 			}
 		},
 	}

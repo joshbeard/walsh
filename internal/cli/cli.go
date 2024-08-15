@@ -2,7 +2,9 @@ package cli
 
 import (
 	"fmt"
+	"os"
 
+	"github.com/charmbracelet/log"
 	"github.com/joshbeard/walsh/internal/config"
 	"github.com/joshbeard/walsh/internal/session"
 	"github.com/joshbeard/walsh/internal/util"
@@ -16,6 +18,9 @@ func Setup(cmd *cobra.Command, args []string) (string, *session.Session, error) 
 		return "", nil, fmt.Errorf("error loading config: %w", err)
 	}
 
+	if _, _, err := setupLogger(cfg.LogLevel, cfg.LogFile); err != nil {
+		return "", nil, fmt.Errorf("error setting up logger: %w", err)
+	}
 	// Create session
 	sess, err := session.NewSession(cfg)
 	if err != nil {
@@ -41,4 +46,45 @@ func Setup(cmd *cobra.Command, args []string) (string, *session.Session, error) 
 	}
 
 	return display, sess, nil
+}
+
+func setupLogger(level, file string) (*log.Logger, *os.File, error) {
+	logH := os.Stderr
+	if file != "" {
+		var err error
+		logH, err = os.OpenFile(file, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to open log file: %w", err)
+		}
+	}
+
+	if level == "" {
+		logH, err := os.Open(os.DevNull)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to open log file: %w", err)
+		}
+
+		logger := log.New(logH)
+		log.SetDefault(logger)
+
+		return logger, logH, nil
+	}
+
+	logger := log.New(logH)
+
+	logLevel, err := log.ParseLevel(level)
+	if err != nil {
+		return nil, nil, fmt.Errorf("could not parse log level: %w", err)
+	}
+
+	logger.SetPrefix("walsh")
+	logger.SetOutput(logH)
+	logger.SetReportCaller(true)
+	logger.SetReportTimestamp(true)
+	logger.SetLevel(logLevel)
+
+	log.SetLevel(logLevel)
+	log.SetDefault(logger)
+
+	return logger, logH, nil
 }

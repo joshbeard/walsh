@@ -8,25 +8,29 @@ import (
 )
 
 type Config struct {
-	Sources                 []string `yaml:"sources"`
-	ListsDir                string   `yaml:"lists_dir"`
-	BlacklistFile           string   `yaml:"blacklist"`
-	HistoryFile             string   `yaml:"history"`
-	CurrentFile             string   `yaml:"current"`
-	HistorySize             int      `yaml:"history_size"`
-	CacheDir                string   `yaml:"cache_dir"`
-	CacheSize               int      `yaml:"cache_size"`
-	DownloadDest            string   `yaml:"download_dest"`
-	Interval                int      `yaml:"interval"`
-	DeleteBlacklistedImages bool     `yaml:"delete_blacklisted_images"`
-	SetCommand              string   `yaml:"set_command"`
-	ViewCommand             string   `yaml:"view_command"`
-}
-
-type CLIFlags struct {
-	LogLevel   string
-	ConfigFile string
-	Display    string
+	Sources       []string `yaml:"sources"`
+	ListsDir      string   `yaml:"lists_dir"`
+	BlacklistFile string   `yaml:"blacklist"`
+	HistoryFile   string   `yaml:"history"`
+	CurrentFile   string   `yaml:"current"`
+	HistorySize   int      `yaml:"history_size"`
+	CacheDir      string   `yaml:"cache_dir"`
+	CacheSize     int      `yaml:"cache_size"`
+	DownloadDest  string   `yaml:"download_dest"`
+	// Interval                int      `yaml:"interval"`
+	DeleteBlacklistedImages bool   `yaml:"delete_blacklisted_images"`
+	SetCommand              string `yaml:"set_command"`
+	ViewCommand             string `yaml:"view_command"`
+	LogLevel                string `yaml:"log_level"`
+	LogFile                 string `yaml:"log_file"`
+	ConfigFile              string `yaml:"config_file"`
+	List                    string `yaml:"list"`
+	NoTrack                 bool   `yaml:"no_track"`
+	IgnoreHistory           bool   `yaml:"ignore_history"`
+	Display                 string `yaml:"display"`
+	Interval                int    `yaml:"interval"`
+	ShowTray                bool   `yaml:"enable_tray"`
+	Once                    bool   `yaml:"once"`
 }
 
 func Load(path string) (*Config, error) {
@@ -64,6 +68,78 @@ func Load(path string) (*Config, error) {
 	}
 
 	return cfg, nil
+}
+
+// Merge merges two Config structs, with the second argument taking precedence.
+func (c Config) Merge(other Config) (Config, error) {
+	merged := c
+
+	// Merge simple fields
+	if other.ListsDir != "" {
+		merged.ListsDir = other.ListsDir
+	}
+	if other.BlacklistFile != "" {
+		merged.BlacklistFile = other.BlacklistFile
+	}
+	if other.HistoryFile != "" {
+		merged.HistoryFile = other.HistoryFile
+	}
+	if other.CurrentFile != "" {
+		merged.CurrentFile = other.CurrentFile
+	}
+	if other.HistorySize != 0 {
+		merged.HistorySize = other.HistorySize
+	}
+	if other.CacheDir != "" {
+		merged.CacheDir = other.CacheDir
+	}
+	if other.CacheSize != 0 {
+		merged.CacheSize = other.CacheSize
+	}
+	if other.DownloadDest != "" {
+		merged.DownloadDest = other.DownloadDest
+	}
+	if other.Interval != 0 {
+		merged.Interval = other.Interval
+	}
+	if other.SetCommand != "" {
+		merged.SetCommand = other.SetCommand
+	}
+	if other.ViewCommand != "" {
+		merged.ViewCommand = other.ViewCommand
+	}
+	if other.LogLevel != "" {
+		merged.LogLevel = other.LogLevel
+	}
+	if other.LogFile != "" {
+		merged.LogFile = other.LogFile
+	}
+	if other.ConfigFile != "" {
+		merged.ConfigFile = other.ConfigFile
+	}
+	if other.List != "" {
+		merged.List = other.List
+	}
+	if other.Once {
+		merged.Once = other.Once
+	}
+
+	merged.NoTrack = merged.NoTrack || other.NoTrack
+	merged.IgnoreHistory = merged.IgnoreHistory || other.IgnoreHistory
+	if other.Display != "" {
+		merged.Display = other.Display
+	}
+	merged.ShowTray = merged.ShowTray || other.ShowTray
+
+	// Merge boolean fields
+	merged.DeleteBlacklistedImages = merged.DeleteBlacklistedImages || other.DeleteBlacklistedImages
+
+	// Merge slices
+	if len(other.Sources) > 0 {
+		merged.Sources = other.Sources
+	}
+
+	return merged, nil
 }
 
 func resolveFilePath(path string) (string, error) {

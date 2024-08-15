@@ -1,30 +1,17 @@
-package run
+package tray
 
 import (
 	"fmt"
 
 	"fyne.io/systray"
 	"github.com/charmbracelet/log"
-	"github.com/joshbeard/walsh/cmd/run/icon"
 	"github.com/joshbeard/walsh/internal/config"
 	"github.com/joshbeard/walsh/internal/session"
-	"github.com/spf13/cobra"
+	"github.com/joshbeard/walsh/internal/tray/icon"
 )
 
-func Command() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "run [flags] [sources...]",
-		Short: "run Walsh in the system tray",
-		Run: func(cmd *cobra.Command, args []string) {
-			systray.Run(onReady, onExit)
-		},
-	}
-
-	return cmd
-}
-
 // onReady is the entry point when the systray is ready.
-func onReady() {
+func OnReady() {
 	cfg, err := config.Load("")
 	if err != nil {
 		log.Fatal(err)
@@ -148,6 +135,6 @@ func handleMenuEvents(sess *session.Session, cfg *config.Config, mChange, mView,
 	}()
 }
 
-func onExit() {
+func OnExit() {
 	log.Info("Closing Walsh tray")
 }
