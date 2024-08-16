@@ -148,7 +148,7 @@ func defaultConfig() *Config {
 		CurrentFile:   xdg.DataHome + "/walsh/current.json",
 		HistoryFile:   xdg.DataHome + "/walsh/history.json",
 		ListsDir:      xdg.DataHome + "/walsh/lists",
-		CacheDir:      xdg.CacheHome + "/walsh/cache",
+		CacheDir:      xdg.CacheHome + "/walsh",
 		DownloadDest:  xdg.Home + "/Pictures/Wallpapers",
 		HistorySize:   50,
 		CacheSize:     50,
