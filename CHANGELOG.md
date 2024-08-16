@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.4 - 2024-08-16
+
+- Fix Hyprland display indexing @joshbeard (#52)
+- update cache dir @joshbeard (#51)
+
 ## 0.5.3 - 2024-08-14
 
 - fix: don't try to create download dest @joshbeard (#49)
