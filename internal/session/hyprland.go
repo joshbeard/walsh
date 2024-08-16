@@ -79,10 +79,11 @@ func (h hyprland) parseDisplays(output string) ([]Display, error) {
 	}
 
 	displays := []Display{}
-	for _, monitor := range jsonOutput {
+	for i, monitor := range jsonOutput {
 		displays = append(displays, Display{
 			Name:  monitor["name"].(string),
-			Index: int(monitor["id"].(float64)),
+			Index: i,
+			// Index: int(monitor["id"].(float64)),
 		})
 	}
 
