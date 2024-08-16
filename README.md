@@ -204,7 +204,7 @@ lists_dir: ${XDG_DATA_HOME}/walsh/lists
 
 # The directory to store temporary files, such as images downloaded from remote
 # sources.
-cache_dir: ${XDG_CACHE_HOME}/walsh/cache
+cache_dir: ${XDG_CACHE_HOME}/walsh
 
 # The number of images to keep in the history file.
 history_size: 50
