@@ -2,15 +2,17 @@ package tray
 
 import (
 	"fmt"
+	"sync"
 
 	"fyne.io/systray"
 	"github.com/charmbracelet/log"
+	"github.com/joshbeard/walsh/cmd/blacklist"
 	"github.com/joshbeard/walsh/internal/config"
 	"github.com/joshbeard/walsh/internal/session"
 	"github.com/joshbeard/walsh/internal/tray/icon"
 )
 
-// onReady is the entry point when the systray is ready.
+// OnReady is the entry point when the systray is ready.
 func OnReady() {
 	cfg, err := config.Load("")
 	if err != nil {
@@ -35,6 +37,9 @@ func initializeSystray() {
 
 // setupMenuItems sets up the systray menu items and handles click events.
 func setupMenuItems(sess *session.Session, cfg *config.Config) {
+	// Synchronized access to adding submenus
+	var mu sync.Mutex
+
 	mChange := systray.AddMenuItem("Change Wallpaper", "Change the wallpaper on all displays")
 	mView := systray.AddMenuItem("View Wallpaper", "View the current wallpaper on all displays")
 	mBlacklist := systray.AddMenuItem("Blacklist", "Blacklist the current wallpaper")
@@ -49,7 +54,11 @@ func setupMenuItems(sess *session.Session, cfg *config.Config) {
 
 	// Create a submenu item for each display
 	displays := sess.Displays()
+
+	// Lock while adding menu items to prevent race conditions
+	mu.Lock()
 	viewSubs, changeSubs, blacklistSubs, addToListSubs := createSubMenus(mView, mChange, mBlacklist, mAddToList, displays)
+	mu.Unlock()
 
 	// Handle menu item click events in separate goroutines
 	go handleMenuEvents(sess, cfg, mChange, mView, mBlacklist, mAddToList, cAll, mQuit)
@@ -59,26 +68,26 @@ func setupMenuItems(sess *session.Session, cfg *config.Config) {
 // createSubMenus creates submenu items for each display.
 func createSubMenus(mView, mChange, mBlacklist, mAddToList *systray.MenuItem, displays []session.Display) ([]*systray.MenuItem, []*systray.MenuItem, []*systray.MenuItem, []*systray.MenuItem) {
 	var viewSubs, changeSubs, blacklistSubs, addToListSubs []*systray.MenuItem
-	for _, d := range displays {
+	for i, d := range displays {
 		viewSubs = append(viewSubs, mView.AddSubMenuItem(
-			fmt.Sprintf("%d: %s", d.Index, d.Name),
-			fmt.Sprintf("View the current wallpaper on %d: %s", d.Index, d.Name),
+			fmt.Sprintf("%d: %s", i, d.Name),
+			fmt.Sprintf("View the current wallpaper on %d: %s", i, d.Name),
 		))
 
 		changeSubs = append(changeSubs, mChange.AddSubMenuItem(
-			fmt.Sprintf("%d: %s", d.Index, d.Name),
-			fmt.Sprintf("Change the wallpaper on %d: %s", d.Index, d.Name),
+			fmt.Sprintf("%d: %s", i, d.Name),
+			fmt.Sprintf("Change the wallpaper on %d: %s", i, d.Name),
 		))
 
 		blacklistSubs = append(blacklistSubs, mBlacklist.AddSubMenuItem(
-			fmt.Sprintf("%d: %s", d.Index, d.Name),
-			fmt.Sprintf("Blacklist the current wallpaper on %d: %s", d.Index, d.Name),
+			fmt.Sprintf("%d: %s", i, d.Name),
+			fmt.Sprintf("Blacklist the current wallpaper on %d: %s", i, d.Name),
 		))
 
 		// TODO: Add to list
 		addToListSubs = append(addToListSubs, mAddToList.AddSubMenuItem(
-			fmt.Sprintf("%d: %s", d.Index, d.Name),
-			fmt.Sprintf("Add the current wallpaper to a list on %d: %s", d.Index, d.Name),
+			fmt.Sprintf("%d: %s", i, d.Name),
+			fmt.Sprintf("Add the current wallpaper to a list on %d: %s", i, d.Name),
 		))
 	}
 	return viewSubs, changeSubs, blacklistSubs, addToListSubs
@@ -88,6 +97,7 @@ func createSubMenus(mView, mChange, mBlacklist, mAddToList *systray.MenuItem, di
 func handleDisplayEvents(sess *session.Session, cfg *config.Config, displays []session.Display, viewSubs, changeSubs, blacklistSubs, addToListSubs []*systray.MenuItem) {
 	for i, d := range displays {
 		go func(i int, d session.Display) {
+			disp := fmt.Sprintf("%d", i)
 			for {
 				select {
 				case <-changeSubs[i].ClickedCh:
@@ -95,10 +105,20 @@ func handleDisplayEvents(sess *session.Session, cfg *config.Config, displays []s
 					sess.SetWallpaper(cfg.Sources, d.Name)
 				case <-viewSubs[i].ClickedCh:
 					log.Infof("Viewing wallpaper on %d: %s", d.Index, d.Name)
-					// Handle viewing wallpaper for the specific display
+					current, err := sess.GetCurrentWallpaper(disp)
+					if err != nil {
+						log.Fatal(err)
+					}
+
+					if err = sess.View(current); err != nil {
+						log.Fatal(err)
+					}
 				case <-blacklistSubs[i].ClickedCh:
 					log.Infof("Blacklisting wallpaper on %d: %s", d.Index, d.Name)
 					// Handle blacklisting wallpaper for the specific display
+					if err := blacklist.Blacklist(disp, sess); err != nil {
+						log.Fatal(err)
+					}
 				case <-addToListSubs[i].ClickedCh:
 					log.Infof("Adding wallpaper to list on %d: %s", d.Index, d.Name)
 				}
