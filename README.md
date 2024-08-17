@@ -183,7 +183,9 @@ Standard XDG configuration directories are used for configuration files.
 The default configuration file is `${XDG_CONFIG_HOME}/walsh/config.yml`
 (e.g. `~/.config/walsh/config.yaml`) and will be created if it does not exist.
 
-The default configuration is as follows:
+<details>
+
+<summary>Default Configuration</summary>
 
 ```yaml
 # A list of directories or URIs to source images from.
@@ -244,6 +246,8 @@ view_command: ""
   `${XDG_DATA_HOME}` defaults to `~/Library/Application Support`, and
   `${XDG_CACHE_HOME}` defaults to `~/Library/Caches`.
 
+</details>
+
 ### Sources
 
 Sources is a list of directories or URIs to source images from. Directories
@@ -271,6 +275,10 @@ remote source to work.
 
 #### Hyprland
 
+<details>
+
+<summary>Using `hyprctl`</summary>
+
 In `~/.config/hypr/hyprland.conf`:
 
 ```plain
@@ -284,7 +292,13 @@ variable:
 exec-once = SSH_AUTH_SOCK=/run/user/1000/gcr/ssh $HOME/bin/walsh set --interval 600
 ```
 
+</details>
+
 #### i3
+
+<details>
+
+<summary>Using `i3`</summary>
 
 In `~/.config/i3/config`:
 
@@ -299,7 +313,13 @@ variable:
 exec --no-startup-id export SSH_AUTH_SOCK=/run/user/1000/gcr/ssh && $HOME/bin/walsh set --interval 600
 ```
 
+</details>
+
 #### macOS
+
+<details>
+
+<summary>Using `launchd`</summary>
 
 Create a `launchd` plist file at
 `~/Library/LaunchAgents/com.github.joshbeard.walsh.plist` with the following
@@ -340,6 +360,8 @@ To unload the plist:
 ```shell
 launchctl unload ~/Library/LaunchAgents/com.github.joshbeard.walsh.plist
 ```
+
+</details>
 
 ## License
 
