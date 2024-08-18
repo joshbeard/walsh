@@ -1,9 +1,9 @@
 # walsh
 
-Walsh is a niche CLI wallpaper manager for randomizing images on multiple
-displays from various configured sources. It supports saving images to lists,
-blacklisting unwanted images, downloading images, and more, by acting as a
-wrapper around other tools to query displays and set wallpapers.
+Walsh is a niche CLI and system tray wallpaper manager for randomizing images
+on multiple displays from various configured sources. It supports saving images
+to lists, blacklisting unwanted images, downloading images, and more, by acting
+as a wrapper around other tools to query displays and set wallpapers.
 
 <img align="right" width="256" height="256" src=".doc/image.jpg">
 
@@ -16,6 +16,7 @@ wrapper around other tools to query displays and set wallpapers.
 * Track recent wallpapers to avoid repetition
 * Blacklist unwanted wallpapers
 * Source images from a remote server over SSH
+* Optionally use a system tray icon for quick access
 * Supports Xorg, Wayland, and macOS
 
 ## Getting Started
@@ -108,7 +109,6 @@ source configured. See [Configuration](#configuration) for more information.
 
 ### Set Wallpaper
 
-
 ```shell
 # Set a random wallpaper on each display using the configured sources:
 walsh set
@@ -134,6 +134,12 @@ walsh set -d 1 ~/Pictures/wallpapers/wallpaper.jpg
 
 # Set a random wallpaper from an SSH source:
 walsh set ssh://user@host/path/to/wallpapers
+
+# Set a wallpaper and exit, ignoring the configured interval:
+walsh set --once
+
+# Enable the system tray icon and run in the background:
+walsh set --tray
 ```
 
 ### View Wallpaper
@@ -237,6 +243,21 @@ set_command: ""
 # By default, this uses 'xdg-open' on Linux/BSD and falls back to looking for
 # feh, eog, eom. Preview is used by default on macOS.
 view_command: ""
+
+# Enable the system tray icon and run in the background.
+enable_tray: true
+
+# Intervals to show (in seconds) in the system tray menu.
+menu_intervals:
+  - 300
+  - 600
+  - 1200
+  - 1800
+  - 3600
+  - 7200
+  - 21600
+  - 43200
+  - 86400
 ```
 
 * On Linux and BSD, `${XDG_CONFIG_HOME}` defaults to `~/.config`,
@@ -366,3 +387,7 @@ launchctl unload ~/Library/LaunchAgents/com.github.joshbeard.walsh.plist
 ## License
 
 walsh is released under the [0BSD license](LICENSE.md)
+
+## Acknowledgements
+
+Icon made by logisstudio from [Flaticon](https://www.flaticon.com/free-icons/gallery).

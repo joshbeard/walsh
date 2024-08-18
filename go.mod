@@ -8,6 +8,7 @@ require (
 	github.com/boumenot/gocover-cobertura v1.2.0
 	github.com/charmbracelet/log v0.4.0
 	github.com/fatih/color v1.17.0
+	github.com/gen2brain/beeep v0.0.0-20240516210008-9c006672e7f4
 	github.com/golangci/golangci-lint v1.59.1
 	github.com/segmentio/golines v0.12.2
 	github.com/spf13/cobra v1.8.1
@@ -69,6 +70,7 @@ require (
 	github.com/ghostiam/protogetter v0.3.6 // indirect
 	github.com/go-critic/go-critic v0.11.4 // indirect
 	github.com/go-logfmt/logfmt v0.6.0 // indirect
+	github.com/go-toast/toast v0.0.0-20190211030409-01e6764cf0a4 // indirect
 	github.com/go-toolsmith/astcast v1.1.0 // indirect
 	github.com/go-toolsmith/astcopy v1.1.0 // indirect
 	github.com/go-toolsmith/astequal v1.2.0 // indirect
@@ -135,6 +137,7 @@ require (
 	github.com/nakabonne/nestif v0.3.1 // indirect
 	github.com/nishanths/exhaustive v0.12.0 // indirect
 	github.com/nishanths/predeclared v0.2.2 // indirect
+	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d // indirect
 	github.com/nunnatsa/ginkgolinter v0.16.2 // indirect
 	github.com/olekukonko/tablewriter v0.0.5 // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
@@ -175,6 +178,7 @@ require (
 	github.com/stretchr/testify v1.9.0 // indirect
 	github.com/subosito/gotenv v1.4.1 // indirect
 	github.com/t-yuki/gocover-cobertura v0.0.0-20180217150009-aaee18c8195c // indirect
+	github.com/tadvi/systray v0.0.0-20190226123456-11a2b8fa57af // indirect
 	github.com/tdakkota/asciicheck v0.2.0 // indirect
 	github.com/tetafro/godot v1.4.16 // indirect
 	github.com/timakin/bodyclose v0.0.0-20230421092635-574207250966 // indirect

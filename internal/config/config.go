@@ -1,37 +1,47 @@
 package config
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/adrg/xdg"
 	"github.com/charmbracelet/log"
 	"github.com/joshbeard/walsh/internal/util"
 	"gopkg.in/yaml.v3"
 )
 
+const (
+	MaxInterval = 31536000
+	MinInterval = 10
+)
+
 type Config struct {
-	Sources       []string `yaml:"sources"`
-	ListsDir      string   `yaml:"lists_dir"`
-	BlacklistFile string   `yaml:"blacklist"`
-	HistoryFile   string   `yaml:"history"`
-	CurrentFile   string   `yaml:"current"`
-	HistorySize   int      `yaml:"history_size"`
-	CacheDir      string   `yaml:"cache_dir"`
-	CacheSize     int      `yaml:"cache_size"`
-	DownloadDest  string   `yaml:"download_dest"`
-	// Interval                int      `yaml:"interval"`
-	DeleteBlacklistedImages bool   `yaml:"delete_blacklisted_images"`
-	SetCommand              string `yaml:"set_command"`
-	ViewCommand             string `yaml:"view_command"`
-	LogLevel                string `yaml:"log_level"`
-	LogFile                 string `yaml:"log_file"`
-	ConfigFile              string `yaml:"config_file"`
-	List                    string `yaml:"list"`
-	NoTrack                 bool   `yaml:"no_track"`
-	IgnoreHistory           bool   `yaml:"ignore_history"`
-	Display                 string `yaml:"display"`
-	Interval                int    `yaml:"interval"`
-	ShowTray                bool   `yaml:"enable_tray"`
-	Once                    bool   `yaml:"once"`
+	Sources                 []string         `yaml:"sources"`
+	ListsDir                string           `yaml:"lists_dir"`
+	BlacklistFile           string           `yaml:"blacklist"`
+	HistoryFile             string           `yaml:"history"`
+	CurrentFile             string           `yaml:"current"`
+	HistorySize             int              `yaml:"history_size"`
+	CacheDir                string           `yaml:"cache_dir"`
+	CacheSize               int              `yaml:"cache_size"`
+	DownloadDest            string           `yaml:"download_dest"`
+	DeleteBlacklistedImages bool             `yaml:"delete_blacklisted_images"`
+	SetCommand              string           `yaml:"set_command"`
+	ViewCommand             string           `yaml:"view_command"`
+	LogLevel                string           `yaml:"log_level"`
+	LogFile                 string           `yaml:"log_file"`
+	ConfigFile              string           `yaml:"config_file"`
+	List                    string           `yaml:"list"`
+	NoTrack                 bool             `yaml:"no_track"`
+	IgnoreHistory           bool             `yaml:"ignore_history"`
+	Display                 string           `yaml:"display"`
+	Interval                int              `yaml:"interval"`
+	ShowTray                bool             `yaml:"enable_tray"`
+	MenuIntervals           []RotateInterval `yaml:"menu_intervals"`
+	Once                    bool             `yaml:"-"`
 }
+
+type RotateInterval int
 
 func Load(path string) (*Config, error) {
 	path, err := resolveFilePath(path)
@@ -61,6 +71,11 @@ func Load(path string) (*Config, error) {
 	}
 
 	applyDefaults(cfg, defaultConfig())
+
+	err = cfg.Validate()
+	if err != nil {
+		return nil, err
+	}
 
 	err = cfg.createDirs()
 	if err != nil {
@@ -232,6 +247,17 @@ func defaultConfig() *Config {
 		Sources: []string{
 			"dir://" + xdg.Home + "/Pictures/Wallpapers",
 		},
+		MenuIntervals: []RotateInterval{
+			300,
+			600,
+			1200,
+			1800,
+			3600,
+			7200,
+			21600,
+			43200,
+			86400,
+		},
 	}
 }
 
@@ -271,4 +297,97 @@ func applyDefaults(cfg, defaults *Config) {
 	if cfg.Sources == nil {
 		cfg.Sources = defaults.Sources
 	}
+
+	if cfg.MenuIntervals == nil {
+		cfg.MenuIntervals = defaults.MenuIntervals
+	}
+}
+
+func (c Config) Validate() error {
+	if c.Interval < 0 {
+		return fmt.Errorf("interval must be greater than or equal to 0")
+	}
+
+	if c.Interval > MaxInterval {
+		return fmt.Errorf("interval must be less than or equal to %d", MaxInterval)
+	}
+
+	if c.Interval < MinInterval && c.Interval != 0 {
+		return fmt.Errorf("interval must be greater than or equal to %d", MinInterval)
+	}
+
+	for _, i := range c.MenuIntervals {
+		if i < 0 {
+			return fmt.Errorf("menu interval must be greater than or equal to 0")
+		}
+
+		if i > MaxInterval {
+			return fmt.Errorf("menu interval must be less than or equal to %d", MaxInterval)
+		}
+
+		if i < MinInterval && i != 0 {
+			return fmt.Errorf("menu interval must be greater than or equal to %d", MinInterval)
+		}
+	}
+
+	return nil
+}
+
+func (r RotateInterval) InList(intervals []RotateInterval) bool {
+	for _, i := range intervals {
+		if i == r {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (r RotateInterval) String() string {
+	if r == 0 {
+		return "Pause"
+	}
+
+	seconds := int(r)
+	var result []string
+
+	days := seconds / 86400
+	if days > 0 {
+		if days == 1 {
+			result = append(result, "1 day")
+		} else {
+			result = append(result, fmt.Sprintf("%d days", days))
+		}
+		seconds %= 86400
+	}
+
+	hours := seconds / 3600
+	if hours > 0 {
+		if hours == 1 {
+			result = append(result, "1 hour")
+		} else {
+			result = append(result, fmt.Sprintf("%d hours", hours))
+		}
+		seconds %= 3600
+	}
+
+	minutes := seconds / 60
+	if minutes > 0 {
+		if minutes == 1 {
+			result = append(result, "1 minute")
+		} else {
+			result = append(result, fmt.Sprintf("%d minutes", minutes))
+		}
+		seconds %= 60
+	}
+
+	if seconds > 0 {
+		if seconds == 1 {
+			result = append(result, "1 second")
+		} else {
+			result = append(result, fmt.Sprintf("%d seconds", seconds))
+		}
+	}
+
+	return strings.Join(result, " ")
 }
