@@ -30,7 +30,7 @@ func isMacOS() bool {
 func (m macos) SetWallpaper(path string, display Display) error {
 	osascript := fmt.Sprintf(
 		`osascript -e 'tell application "System Events" to set picture of desktop %s to "%s"'`,
-		display.Name,
+		display.ID,
 		path,
 	)
 
@@ -66,13 +66,19 @@ func (m macos) GetDisplays() ([]Display, error) {
 		if !ok {
 			log.Fatalf("Error asserting display as map")
 		}
+
 		ndrvs, ok := displayMap["spdisplays_ndrvs"].([]interface{})
 		if !ok {
 			log.Fatalf("Error asserting spdisplays_ndrvs as array")
 		}
 
 		for ii := range ndrvs {
-			displays = append(displays, Display{Index: ii + 1, Name: fmt.Sprintf("%d", ii+1)})
+			// name is from the _name
+			// name := fmt.Sprintf("%d", ii+1)
+			// name := displayMap["_name"].(string)
+			name := ndrvs[ii].(map[string]interface{})["_name"].(string)
+			id := ndrvs[ii].(map[string]interface{})["_spdisplays_displayID"].(string)
+			displays = append(displays, Display{ID: id, Index: ii + 1, Name: name})
 		}
 
 		log.Debugf("Found %d displays", len(ndrvs))
@@ -84,7 +90,7 @@ func (m macos) GetDisplays() ([]Display, error) {
 func (m macos) GetCurrentWallpaper(display, _ Display) (string, error) {
 	osascript := fmt.Sprintf(
 		`osascript -e 'tell application "System Events" to get picture of desktop %s'`,
-		display.Name,
+		display.ID,
 	)
 
 	results, err := util.RunCmd(osascript)

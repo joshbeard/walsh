@@ -31,7 +31,7 @@ func getSwwwWallpaper(display, _ Display) (string, error) {
 		return "", fmt.Errorf("failed to query swww: %w", err)
 	}
 
-	line, err := findDisplayLine(result, display.Name)
+	line, err := findDisplayLine(result, display.ID)
 	if err != nil {
 		return "", err
 	}
@@ -40,7 +40,7 @@ func getSwwwWallpaper(display, _ Display) (string, error) {
 	// e.g. eDP-1: 1920x1200, scale: 1, currently displaying: image: /tmp/unsplash-zG8VFOg7wgo.jpg
 	parts := strings.Split(line, "image: ")
 	if len(parts) < 2 {
-		return "", fmt.Errorf("no image found for display %s", display.Name)
+		return "", fmt.Errorf("no image found for display %s", display.ID)
 	}
 
 	return strings.TrimSpace(parts[1]), nil
@@ -50,9 +50,9 @@ func setWaylandWallpaper(path string, display Display, customCmd string) error {
 	var err error
 	cmd := ""
 	if customCmd != "" {
-		cmd = parseSetCmd(customCmd, path, display.Name)
+		cmd = parseSetCmd(customCmd, path, display.ID)
 	} else {
-		cmd, err = getSetCmd(defaultWaylandSetCmds, path, display.Name)
+		cmd, err = getSetCmd(defaultWaylandSetCmds, path, display.ID)
 		if err != nil {
 			return fmt.Errorf("error getting wallpaper set command: %w", err)
 		}

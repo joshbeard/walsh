@@ -60,6 +60,7 @@ type CurrentWallpaper struct {
 // the display's actual identifier (e.g. eDP-1, HDMI-1, etc.) or an index based
 // on how they are queried from the system (e.g. 0, 1, 2, etc.).
 type Display struct {
+	ID      string       `json:"id"`
 	Index   int          `json:"index"`
 	Name    string       `json:"name"`
 	Current source.Image `json:"current"`
@@ -217,7 +218,7 @@ func (s *Session) SetWallpaper(sources []string, displayStr string) error {
 			mu.Unlock()
 
 			if err != nil {
-				log.Errorf("Error selecting random image for display %s: %s", d.Name, err)
+				log.Errorf("Error selecting random image for display %s: %s", d.ID, err)
 				time.Sleep(1 * time.Second)
 				continue
 			}
@@ -225,7 +226,7 @@ func (s *Session) SetWallpaper(sources []string, displayStr string) error {
 
 			err = s.svc.SetWallpaper(image.Path, d)
 			if err != nil {
-				log.Errorf("Error setting wallpaper for display %s: %s. Will retry", d.Name, err)
+				log.Errorf("Error setting wallpaper for display %s: %s. Will retry", d.ID, err)
 				time.Sleep(1 * time.Second)
 				continue
 			}
@@ -240,7 +241,7 @@ func (s *Session) SetWallpaper(sources []string, displayStr string) error {
 
 			err = s.WriteCurrent(d, image)
 			if err != nil {
-				log.Errorf("Error saving to history for display %s: %s", d.Name, err)
+				log.Errorf("Error saving to history for display %s: %s", d.ID, err)
 				errChan <- err
 				mu.Unlock()
 				return
@@ -248,7 +249,7 @@ func (s *Session) SetWallpaper(sources []string, displayStr string) error {
 
 			err = s.WriteHistory(image)
 			if err != nil {
-				log.Errorf("Error writing to history for display %s: %s", d.Name, err)
+				log.Errorf("Error writing to history for display %s: %s", d.ID, err)
 				errChan <- err
 				mu.Unlock()
 				return
@@ -256,7 +257,7 @@ func (s *Session) SetWallpaper(sources []string, displayStr string) error {
 
 			mu.Unlock()
 
-			log.Infof("Set wallpaper for display %s: %s", d.Name, image.Path)
+			log.Infof("Set wallpaper for display %s: %s", d.ID, image.Path)
 			return
 		}
 		errChan <- errors.New("max retries exceeded")
@@ -292,11 +293,20 @@ func (s Session) GetDisplay(display string) (int, Display, error) {
 			return -1, Display{}, err
 		}
 
-		if i >= len(s.displays) {
-			return -1, Display{}, errors.New("display index out of range")
+		// FIXME: on macos, display numbers start at 1
+		// if i >= len(s.displays) {
+		// 	return -1, Display{}, errors.New("display index out of range")
+		// }
+
+		// Get display with matching ID
+		for _, d := range s.displays {
+			log.Debugf("comparing display %d to %s", d.ID, display)
+			if d.ID == display {
+				return i, d, nil
+			}
 		}
 
-		return i, s.displays[i], nil
+		return -1, Display{}, errors.New("display not found")
 	}
 
 	for i, d := range s.displays {
@@ -317,7 +327,7 @@ func (s Session) Displays() []Display {
 func (c CurrentWallpaper) Display(display string) (Display, error) {
 	for _, d := range c.Displays {
 		// If the display arg is a number, match the index. otherwise, match the name.
-		if strconv.Itoa(d.Index) == display || d.Name == display {
+		if d.ID == display || d.Name == display {
 			return d, nil
 		}
 	}
@@ -388,7 +398,7 @@ func getSetCmd(l []string, path, display string) (string, error) {
 func (s Session) GetCurrentWallpaper(display string) (string, error) {
 	_, d, err := s.GetDisplay(display)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to get display %s: %w", display, err)
 	}
 
 	currentFile, err := s.ReadCurrent()
@@ -479,7 +489,7 @@ func (s Session) WriteCurrent(display Display, path source.Image) error {
 	// Update or append the display in the current wallpaper list
 	found := false
 	for i, d := range current.Displays {
-		if d.Index == display.Index {
+		if d.ID == display.ID {
 			found = true
 			current.Displays[i] = display
 			break

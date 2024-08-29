@@ -59,11 +59,11 @@ func OnReady() {
 	}()
 
 	systray.SetTemplateIcon(icon.Data, icon.Data)
-	systray.SetTitle("Walsh")
+	// systray.SetTitle("Walsh")
 	systray.SetTooltip("Walsh")
 	m := &menu{}
 	if <-sessionReady {
-		log.Infof("Session created: %s", sess)
+		log.Infof("Session created: %+v", sess)
 		setupMenuItems(m, sess)
 
 		// Handle menu item click events in separate goroutines
@@ -86,11 +86,11 @@ func setupMenuItems(m *menu, sess *session.Session) {
 	log.Debug("Menu items created")
 
 	systray.AddSeparator()
-	m.Quit = systray.AddMenuItem("Quit Walsh", "Quit Walsh")
+	m.Quit = systray.AddMenuItem("Quit Walsh", "")
 }
 
 func (m *menu) createIntervalMenu(sess *session.Session) {
-	mRotateInterval := systray.AddMenuItem("Rotate Interval…", "Set the interval to rotate wallpapers")
+	mRotateInterval := systray.AddMenuItem("Rotate Interval…", "")
 
 	menuHasInterval := false
 	set := []config.RotateInterval{}
@@ -100,27 +100,25 @@ func (m *menu) createIntervalMenu(sess *session.Session) {
 	menuIntervals := sess.Config().MenuIntervals
 	menuIntervals = append([]config.RotateInterval{0}, menuIntervals...)
 	for _, interval := range menuIntervals {
+		check := " "
 		if interval.InList(set) {
 			continue
 		}
 		set = append(set, interval)
 
-		check := " "
 		// Check the current interval
 		if int(interval) == sess.Interval() {
 			menuHasInterval = true
 			check = "✔"
 		}
 
-		s := mRotateInterval.AddSubMenuItemCheckbox(fmt.Sprintf("%s %s", check, interval.String()),
-			fmt.Sprintf("Rotate wallpapers every %s", interval.String()), menuHasInterval)
+		s := mRotateInterval.AddSubMenuItemCheckbox(fmt.Sprintf("%s %s", check, interval.String()), "", false)
 
 		m.Intervals.subs = append(m.Intervals.subs, intervalItem{interval: int(interval), item: s})
 	}
 
 	if !menuHasInterval {
-		mRotateInterval.AddSubMenuItemCheckbox(fmt.Sprintf("✔ %d", sess.Interval()),
-			fmt.Sprintf("Rotate wallpapers every %d", sess.Interval()), true)
+		mRotateInterval.AddSubMenuItemCheckbox(fmt.Sprintf(" %d", sess.Interval()), "", false)
 	}
 
 	log.Debug("Interval menu created")
@@ -130,18 +128,16 @@ func (m *menu) createViewMenu(sess *session.Session) {
 	displays := sess.Displays()
 	if len(displays) < 2 {
 		m.View = menuItem{
-			parent: systray.AddMenuItem("View Wallpaper", "View the current wallpaper"),
+			parent: systray.AddMenuItem("View Wallpaper", ""),
 		}
 		return
 	}
 
 	var viewSubs []*systray.MenuItem
-	mView := systray.AddMenuItem("View Wallpaper…", "View the current wallpaper on all displays")
-	for i, d := range displays {
+	mView := systray.AddMenuItem("View Wallpaper…", "")
+	for _, d := range displays {
 		viewSubs = append(viewSubs, mView.AddSubMenuItem(
-			fmt.Sprintf("%d: %s", i, d.Name),
-			fmt.Sprintf("View the current wallpaper on %d: %s", i, d.Name),
-		))
+			fmt.Sprintf("%s: %s", d.ID, d.Name), ""))
 	}
 
 	m.View = menuItem{parent: mView, subs: viewSubs}
@@ -151,19 +147,17 @@ func (m *menu) createChangeMenu(sess *session.Session) {
 	displays := sess.Displays()
 	if len(displays) < 2 {
 		m.Change = menuItem{
-			parent: systray.AddMenuItem("Change Wallpaper", "Change the wallpaper"),
+			parent: systray.AddMenuItem("Change Wallpaper", ""),
 		}
 		return
 	}
 
 	var changeSubs []*systray.MenuItem
-	mChange := systray.AddMenuItem("Change Wallpaper…", "Change the wallpaper on all displays")
-	mChange.AddSubMenuItem("All", "Change the wallpaper on all displays")
-	for i, d := range displays {
+	mChange := systray.AddMenuItem("Change Wallpaper…", "")
+	mChange.AddSubMenuItem("All", "")
+	for _, d := range displays {
 		changeSubs = append(changeSubs, mChange.AddSubMenuItem(
-			fmt.Sprintf("%d: %s", i, d.Name),
-			fmt.Sprintf("Change the wallpaper on %d: %s", i, d.Name),
-		))
+			fmt.Sprintf("%s: %s", d.ID, d.Name), ""))
 	}
 
 	m.Change = menuItem{parent: mChange, subs: changeSubs}
@@ -173,28 +167,26 @@ func (m *menu) createBlacklistMenu(sess *session.Session) {
 	displays := sess.Displays()
 	if len(displays) < 2 {
 		m.Blacklist = menuItem{
-			parent: systray.AddMenuItem("Blacklist", "Blacklist the current wallpaper"),
+			parent: systray.AddMenuItem("Blacklist", ""),
 		}
 		return
 	}
 
 	var blacklistSubs []*systray.MenuItem
-	mBlacklist := systray.AddMenuItem("Blacklist…", "Blacklist the current wallpaper on all displays")
-	for i, d := range displays {
+	mBlacklist := systray.AddMenuItem("Blacklist…", "")
+	for _, d := range displays {
 		blacklistSubs = append(blacklistSubs, mBlacklist.AddSubMenuItem(
-			fmt.Sprintf("%d: %s", i, d.Name),
-			fmt.Sprintf("Blacklist the current wallpaper on %d: %s", i, d.Name),
-		))
+			fmt.Sprintf("%s: %s", d.ID, d.Name), ""))
 	}
 
 	m.Blacklist = menuItem{parent: mBlacklist, subs: blacklistSubs}
 }
 
 func (m *menu) createUseListMenu(sess *session.Session) {
-	mUseList := systray.AddMenuItem("Use List…", "Use a list of wallpapers")
-	mUseList.AddSubMenuItem("Nature", "Use wallpapers from the nature list")
-	mUseList.AddSubMenuItem("Favorites", "Use wallpapers from the favorites list")
-	mUseList.AddSubMenuItem("Mountains", "Use wallpapers from the mountains list")
+	mUseList := systray.AddMenuItem("Use List…", "")
+	mUseList.AddSubMenuItem("Nature", "")
+	mUseList.AddSubMenuItem("Favorites", "")
+	mUseList.AddSubMenuItem("Mountains", "")
 
 	m.UseList = menuItem{parent: mUseList}
 }
@@ -207,31 +199,33 @@ func handleDisplayEvents(sess *session.Session, m menu) {
 
 	for i, d := range sess.Displays() {
 		go func(i int, d session.Display) {
-			disp := fmt.Sprintf("%d", i)
 			for {
 				select {
 				case <-m.Change.subs[i].ClickedCh:
-					log.Infof("Changing wallpaper on %d: %s", d.Index, d.Name)
-					sess.SetWallpaper(sess.Config().Sources, d.Name)
-				case <-m.View.subs[i].ClickedCh:
-					log.Infof("Viewing wallpaper on %d: %s", d.Index, d.Name)
-					current, err := sess.GetCurrentWallpaper(disp)
+					log.Infof("Changing wallpaper on %s: %s", d.ID, d.Name)
+					err := sess.SetWallpaper(sess.Config().Sources, d.ID)
 					if err != nil {
 						log.Fatal(err)
+					}
+				case <-m.View.subs[i].ClickedCh:
+					log.Infof("Viewing wallpaper on %s: %s", d.ID, d.Name)
+					current, err := sess.GetCurrentWallpaper(d.ID)
+					if err != nil {
+						log.Fatalf("Error getting current wallpaper: %v", err)
 					}
 
 					if err = sess.View(current); err != nil {
 						log.Fatal(err)
 					}
 				case <-m.Blacklist.subs[i].ClickedCh:
-					log.Infof("Blacklisting wallpaper on %d: %s", d.Index, d.Name)
+					log.Infof("Blacklisting wallpaper on %s: %s", d.ID, d.Name)
 
-					err := beeep.Notify("Walsh", fmt.Sprintf("Blacklisting wallpaper on %d: %s", d.Index, d.Name), "icon/wicon.png")
+					err := beeep.Notify("Walsh", fmt.Sprintf("Blacklisting wallpaper on %s: %s", d.ID, d.Name), "icon/wicon.png")
 					if err != nil {
 						log.Fatal(err)
 					}
 					// Handle blacklisting wallpaper for the specific display
-					if err := blacklist.Blacklist(disp, sess); err != nil {
+					if err := blacklist.Blacklist(d.ID, sess); err != nil {
 						log.Fatal(err)
 					}
 					// case <-m.AddToList.subs[i].ClickedCh:

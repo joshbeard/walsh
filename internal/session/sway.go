@@ -58,6 +58,7 @@ func (s sway) parseDisplays(result string) ([]Display, error) {
 		displays = append(displays, Display{
 			Index: i,
 			Name:  name.(string),
+			// FIXME: Add ID here
 		})
 	}
 

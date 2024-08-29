@@ -38,7 +38,7 @@ func (h hyprland) getInstance() (string, error) {
 
 	log.Debugf("found %d hyprland instances", len(instancesJSON))
 
-	// Asume instance 0 for now
+	// Assume instance 0 for now
 	instance := instancesJSON[0]
 	instanceID := instance["instance"].(string)
 
@@ -83,7 +83,7 @@ func (h hyprland) parseDisplays(output string) ([]Display, error) {
 		displays = append(displays, Display{
 			Name:  monitor["name"].(string),
 			Index: i,
-			// Index: int(monitor["id"].(float64)),
+			ID:    monitor["id"].(string),
 		})
 	}
 

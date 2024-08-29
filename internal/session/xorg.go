@@ -30,7 +30,7 @@ func NewXorg(cfg *config.Config) SessionProvider {
 
 func (x xorg) SetWallpaper(path string, display Display) error {
 	if x.cfg.SetCommand != "" {
-		cmd := parseSetCmd(x.cfg.SetCommand, path, display.Name)
+		cmd := parseSetCmd(x.cfg.SetCommand, path, display.ID)
 		_, err := util.RunCmd(cmd)
 		if err != nil {
 			return err
@@ -39,7 +39,7 @@ func (x xorg) SetWallpaper(path string, display Display) error {
 		return nil
 	}
 
-	cmd, err := getSetCmd(defaultXorgSetCmds, path, display.Name)
+	cmd, err := getSetCmd(defaultXorgSetCmds, path, display.ID)
 	if err != nil {
 		return err
 	}
@@ -67,7 +67,11 @@ func (x xorg) GetDisplays() ([]Display, error) {
 
 	var displays []Display
 	for i := range lines {
-		displays = append(displays, Display{Index: i, Name: fmt.Sprintf("%d", i)})
+		displays = append(displays, Display{
+			ID:    fmt.Sprintf("%d", i),
+			Index: i,
+			Name:  fmt.Sprintf("%d", i),
+		})
 	}
 
 	log.Debugf("Found %d displays: %+v", len(displays), displays)
