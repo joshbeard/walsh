@@ -31,7 +31,7 @@ func getSwwwWallpaper(display, _ Display) (string, error) {
 		return "", fmt.Errorf("failed to query swww: %w", err)
 	}
 
-	line, err := findDisplayLine(result, display.ID)
+	line, err := findDisplayLine(result, display.Name)
 	if err != nil {
 		return "", err
 	}
@@ -50,9 +50,9 @@ func setWaylandWallpaper(path string, display Display, customCmd string) error {
 	var err error
 	cmd := ""
 	if customCmd != "" {
-		cmd = parseSetCmd(customCmd, path, display.ID)
+		cmd = parseSetCmd(customCmd, path, display.Name)
 	} else {
-		cmd, err = getSetCmd(defaultWaylandSetCmds, path, display.ID)
+		cmd, err = getSetCmd(defaultWaylandSetCmds, path, display.Name)
 		if err != nil {
 			return fmt.Errorf("error getting wallpaper set command: %w", err)
 		}

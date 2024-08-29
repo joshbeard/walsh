@@ -39,41 +39,21 @@ type menuItem struct {
 
 // OnReady is the entry point when the systray is ready.
 func OnReady() {
-	cfg, err := config.Load("")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	var sess *session.Session
-	sessionReady := make(chan bool)
-
-	go func() {
-		var err error
-		sess, err = session.NewSession(cfg)
-		if err != nil {
-			log.Error(err)
-			close(sessionReady)
-			return
-		}
-		sessionReady <- true
-	}()
+	sess := session.Current
+	m := &menu{}
 
 	systray.SetTemplateIcon(icon.Data, icon.Data)
-	// systray.SetTitle("Walsh")
 	systray.SetTooltip("Walsh")
-	m := &menu{}
-	if <-sessionReady {
-		log.Infof("Session created: %+v", sess)
-		setupMenuItems(m, sess)
 
-		// Handle menu item click events in separate goroutines
-		go handleMenuEvents(sess, *m)
-		go handleDisplayEvents(sess, *m)
-		go handleIntervalEvents(sess, *m)
-	} else {
-		log.Fatal("Failed to create session")
-	}
+	// Don't set a title for now
+	// systray.SetTitle("Walsh")
 
+	setupMenuItems(m, sess)
+
+	// Handle menu item click events in separate goroutines
+	go handleMenuEvents(sess, *m)
+	go handleDisplayEvents(sess, *m)
+	go handleIntervalEvents(sess, *m)
 }
 
 // setupMenuItems sets up the systray menu items and handles click events.
@@ -83,7 +63,6 @@ func setupMenuItems(m *menu, sess *session.Session) {
 	m.createBlacklistMenu(sess)
 	m.createIntervalMenu(sess)
 	m.createUseListMenu(sess)
-	log.Debug("Menu items created")
 
 	systray.AddSeparator()
 	m.Quit = systray.AddMenuItem("Quit Walsh", "")

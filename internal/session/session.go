@@ -23,6 +23,8 @@ import (
 // wallpaper.
 const MaxRetries = 6
 
+var Current *Session
+
 // defaultViewCmds are the default commands to view an image.
 var defaultViewCmds = []string{
 	`xdg-open '{{path}}'`,
@@ -119,13 +121,17 @@ func NewSession(cfg *config.Config) (*Session, error) {
 		return nil, err
 	}
 
-	return &Session{
+	sess := &Session{
 		svc:      svc,
 		sessType: sessType,
 		displays: display,
 		cfg:      cfg,
 		interval: cfg.Interval,
-	}, nil
+	}
+
+	Current = sess
+
+	return sess, nil
 }
 
 // Config returns the session's config.
@@ -300,7 +306,6 @@ func (s Session) GetDisplay(display string) (int, Display, error) {
 
 		// Get display with matching ID
 		for _, d := range s.displays {
-			log.Debugf("comparing display %d to %s", d.ID, display)
 			if d.ID == display {
 				return i, d, nil
 			}

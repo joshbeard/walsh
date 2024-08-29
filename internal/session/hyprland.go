@@ -80,10 +80,11 @@ func (h hyprland) parseDisplays(output string) ([]Display, error) {
 
 	displays := []Display{}
 	for i, monitor := range jsonOutput {
+		id := monitor["id"].(float64)
 		displays = append(displays, Display{
 			Name:  monitor["name"].(string),
 			Index: i,
-			ID:    monitor["id"].(string),
+			ID:    fmt.Sprintf("%d", int(id)),
 		})
 	}
 

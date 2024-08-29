@@ -88,14 +88,14 @@ func Run(cmd *cobra.Command, args []string, cfg config.Config) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancelFunc = cancel
 
-	display, sess, err := cli.Setup(cmd, args)
+	display, _, err := cli.Setup(cmd, args)
 	if err != nil {
 		log.Fatal(err)
 	}
 	cfg.Display = display
 
 	if (cfg.Interval <= 0 && !cfg.ShowTray) || cfg.Once {
-		if err := setWallpaper(cmd, args, &cfg, sess); err != nil {
+		if err := setWallpaper(cmd, args, &cfg, session.Current); err != nil {
 			log.Fatalf("Error: %v", err)
 		}
 
@@ -103,7 +103,7 @@ func Run(cmd *cobra.Command, args []string, cfg config.Config) {
 	}
 
 	go func() {
-		if err := setWallpaperWithContext(ctx, cmd, args, &cfg, sess); err != nil {
+		if err := setWallpaperWithContext(ctx, cmd, args, &cfg, session.Current); err != nil {
 			log.Fatalf("Error: %v", err)
 		}
 	}()
