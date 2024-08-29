@@ -248,6 +248,7 @@ func defaultConfig() *Config {
 			"dir://" + xdg.Home + "/Pictures/Wallpapers",
 		},
 		MenuIntervals: []RotateInterval{
+			60,
 			300,
 			600,
 			1200,

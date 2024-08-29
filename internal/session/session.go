@@ -37,6 +37,7 @@ type Session struct {
 	svc      SessionProvider
 	sessType SessionType
 	cfg      *config.Config
+	interval int
 }
 
 // SessionProvider is an interface for interacting with the desktop session.
@@ -122,12 +123,21 @@ func NewSession(cfg *config.Config) (*Session, error) {
 		sessType: sessType,
 		displays: display,
 		cfg:      cfg,
+		interval: cfg.Interval,
 	}, nil
 }
 
 // Config returns the session's config.
 func (s Session) Config() *config.Config {
 	return s.cfg
+}
+
+func (s *Session) SetInterval(interval int) {
+	s.interval = interval
+}
+
+func (s Session) Interval() int {
+	return s.interval
 }
 
 // getImages gets images from the sources and filters them based on the

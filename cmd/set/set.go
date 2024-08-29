@@ -12,6 +12,7 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/joshbeard/walsh/internal/cli"
 	"github.com/joshbeard/walsh/internal/config"
+	"github.com/joshbeard/walsh/internal/session"
 	"github.com/joshbeard/walsh/internal/tray"
 	"github.com/spf13/cobra"
 )
@@ -87,8 +88,14 @@ func Run(cmd *cobra.Command, args []string, cfg config.Config) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancelFunc = cancel
 
+	display, sess, err := cli.Setup(cmd, args)
+	if err != nil {
+		log.Fatal(err)
+	}
+	cfg.Display = display
+
 	if (cfg.Interval <= 0 && !cfg.ShowTray) || cfg.Once {
-		if err := setWallpaper(cmd, args, &cfg); err != nil {
+		if err := setWallpaper(cmd, args, &cfg, sess); err != nil {
 			log.Fatalf("Error: %v", err)
 		}
 
@@ -96,7 +103,7 @@ func Run(cmd *cobra.Command, args []string, cfg config.Config) {
 	}
 
 	go func() {
-		if err := setWallpaperWithContext(ctx, cmd, args, &cfg); err != nil {
+		if err := setWallpaperWithContext(ctx, cmd, args, &cfg, sess); err != nil {
 			log.Fatalf("Error: %v", err)
 		}
 	}()
@@ -123,21 +130,21 @@ func quit() {
 	log.Info("Exiting...")
 }
 
-func setWallpaperWithContext(ctx context.Context, cmd *cobra.Command, args []string, cfg *config.Config) error {
+func setWallpaperWithContext(ctx context.Context, cmd *cobra.Command, args []string, cfg *config.Config, sess *session.Session) error {
 	for {
 		select {
 		case <-ctx.Done():
 			log.Info("Stopping wallpaper setting due to context cancellation")
 			return nil
 		default:
-			if err := setWallpaper(cmd, args, cfg); err != nil {
+			if err := setWallpaper(cmd, args, cfg, sess); err != nil {
 				return err
 			}
 		}
 	}
 }
 
-func setWallpaper(cmd *cobra.Command, args []string, cfg *config.Config) error {
+func setWallpaper(cmd *cobra.Command, args []string, cfg *config.Config, sess *session.Session) error {
 	maxRetries := 3                  // Maximum number of retries
 	retryInterval := 2 * time.Second // Interval between retries
 
@@ -155,11 +162,6 @@ func setWallpaper(cmd *cobra.Command, args []string, cfg *config.Config) error {
 	}
 
 	err := retry(func() error {
-		display, sess, err := cli.Setup(cmd, args)
-		if err != nil {
-			return err
-		}
-		cfg.Display = display
 		return sess.SetWallpaper(cfg.Sources, cfg.Display)
 	})
 	if err != nil {
@@ -181,13 +183,16 @@ func setWallpaper(cmd *cobra.Command, args []string, cfg *config.Config) error {
 				return err
 			}
 			cfg.Display = display
+			ticker.Reset(time.Duration(sess.Interval()) * time.Second)
+			log.Debugf("Ticker interval set to %d seconds", sess.Interval())
+
 			return sess.SetWallpaper(cfg.Sources, cfg.Display)
 		})
 		if err != nil {
 			log.Fatal(err)
 			return err
 		}
-		log.Infof("Next wallpaper change in %d seconds", cfg.Interval)
+		log.Infof("Next wallpaper change in %d seconds", time.Duration(cfg.Interval))
 	}
 
 	return nil
