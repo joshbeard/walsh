@@ -1,7 +1,5 @@
 package session
 
-// TODO: macOS support.
-
 import (
 	"encoding/json"
 	"fmt"
@@ -73,12 +71,17 @@ func (m macos) GetDisplays() ([]Display, error) {
 		}
 
 		for ii := range ndrvs {
-			// name is from the _name
-			// name := fmt.Sprintf("%d", ii+1)
-			// name := displayMap["_name"].(string)
 			name := ndrvs[ii].(map[string]interface{})["_name"].(string)
-			id := ndrvs[ii].(map[string]interface{})["_spdisplays_displayID"].(string)
-			displays = append(displays, Display{ID: id, Index: ii + 1, Name: name})
+
+			// displays are targeted by their index, which doesn't align with the ID.
+			// id := ndrvs[ii].(map[string]interface{})["_spdisplays_displayID"].(string)
+			id := ii + 1
+
+			displays = append(displays, Display{
+				ID:    fmt.Sprintf("%d", id),
+				Index: id,
+				Name:  name,
+			})
 		}
 
 		log.Debugf("Found %d displays", len(ndrvs))

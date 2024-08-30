@@ -1,23 +1,16 @@
 package set
 
 import (
-	"context"
 	"fmt"
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
 
-	"fyne.io/systray"
 	"github.com/charmbracelet/log"
 	"github.com/joshbeard/walsh/internal/cli"
 	"github.com/joshbeard/walsh/internal/config"
+	"github.com/joshbeard/walsh/internal/daemon"
 	"github.com/joshbeard/walsh/internal/session"
-	"github.com/joshbeard/walsh/internal/tray"
+	"github.com/joshbeard/walsh/internal/util"
 	"github.com/spf13/cobra"
 )
-
-var cancelFunc context.CancelFunc
 
 func Command() *cobra.Command {
 	var cfg config.Config
@@ -38,7 +31,7 @@ func Command() *cobra.Command {
 			"  walsh set --interval 60 -d 0 --tray\n" +
 			"  walsh set --once (default behavior; override config file)",
 		Run: func(cmd *cobra.Command, args []string) {
-			Run(cmd, args, cfg)
+			Run(cmd, args, &cfg)
 		},
 	}
 
@@ -64,7 +57,7 @@ func SetFlags(cmd *cobra.Command, opts *config.Config) {
 		"set wallpaper once and exit. This overrides the config file when interval is set")
 }
 
-func Run(cmd *cobra.Command, args []string, cfg config.Config) {
+func Run(cmd *cobra.Command, args []string, cfg *config.Config) {
 	// Load config
 	loaded, err := config.Load("")
 	if err != nil {
@@ -85,115 +78,36 @@ func Run(cmd *cobra.Command, args []string, cfg config.Config) {
 		log.Debug("Interval is set, but 'once' is set. Disabling interval.")
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	cancelFunc = cancel
-
 	display, _, err := cli.Setup(cmd, args)
 	if err != nil {
 		log.Fatal(err)
 	}
-	cfg.Display = display
+
+	sess := session.Current
+
+	err = util.Retry(
+		cfg.MaxRetries,
+		cfg.RetryInterval,
+		func() error {
+			return sess.SetWallpaper(display)
+		})
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	if (cfg.Interval <= 0 && !cfg.ShowTray) || cfg.Once {
-		if err := setWallpaper(cmd, args, &cfg, session.Current); err != nil {
-			log.Fatalf("Error: %v", err)
-		}
-
+		log.Debug("Setting wallpaper once")
 		return
 	}
 
-	go func() {
-		if err := setWallpaperWithContext(ctx, cmd, args, &cfg, session.Current); err != nil {
-			log.Fatalf("Error: %v", err)
-		}
-	}()
+	// Initialize the daemon
+	d := daemon.NewDaemon(sess, display)
 
-	if cfg.ShowTray {
-		systray.Run(tray.OnReady, quit)
-	}
-
-	// Handle OS signals for clean shutdown
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
-	select {
-	case <-ctx.Done():
-	case <-sigChan:
-		quit()
-	}
-}
-
-func quit() {
-	if cancelFunc != nil {
-		cancelFunc()
-	}
-	systray.Quit()
-	log.Info("Exiting...")
-}
-
-func setWallpaperWithContext(ctx context.Context, cmd *cobra.Command, args []string, cfg *config.Config, sess *session.Session) error {
-	for {
-		select {
-		case <-ctx.Done():
-			log.Info("Stopping wallpaper setting due to context cancellation")
-			return nil
-		default:
-			if err := setWallpaper(cmd, args, cfg, sess); err != nil {
-				return err
-			}
-		}
-	}
-}
-
-func setWallpaper(cmd *cobra.Command, args []string, cfg *config.Config, sess *session.Session) error {
-	maxRetries := 3                  // Maximum number of retries
-	retryInterval := 2 * time.Second // Interval between retries
-
-	retry := func(operation func() error) error {
-		var err error
-		for i := 0; i < maxRetries; i++ {
-			err = operation()
-			if err == nil {
-				return nil
-			}
-			log.Errorf("Error encountered: %s. Retrying in %v...", err, retryInterval)
-			time.Sleep(retryInterval)
-		}
-		return err
-	}
-
-	err := retry(func() error {
-		return sess.SetWallpaper(cfg.Sources, cfg.Display)
-	})
+	// Start the daemon
+	err = d.Start()
 	if err != nil {
 		log.Fatal(err)
-		return err
 	}
 
-	if cfg.Interval <= 0 || cfg.Once {
-		return nil
-	}
-
-	ticker := time.NewTicker(time.Duration(cfg.Interval) * time.Second)
-	defer ticker.Stop()
-
-	for range ticker.C {
-		err := retry(func() error {
-			display, sess, err := cli.Setup(cmd, args)
-			if err != nil {
-				return err
-			}
-			cfg.Display = display
-			ticker.Reset(time.Duration(sess.Interval()) * time.Second)
-			log.Debugf("Ticker interval set to %d seconds", sess.Interval())
-
-			return sess.SetWallpaper(cfg.Sources, cfg.Display)
-		})
-		if err != nil {
-			log.Fatal(err)
-			return err
-		}
-		log.Infof("Next wallpaper change in %d seconds", time.Duration(cfg.Interval))
-	}
-
-	return nil
+	log.Info("Daemon started")
 }

@@ -26,9 +26,9 @@ type Images struct {
 }
 
 type Image struct {
-	Source string
-	Path   string
-	ShaSum string
+	Source string `json:"source,omitempty"`
+	Path   string `json:"path"`
+	ShaSum string `json:"shasum"`
 }
 
 type SourceType int
@@ -404,7 +404,15 @@ func UploadSSHImage(src Image, dest string) error {
 }
 
 func ImageInList(image Image, list []Image) bool {
+	if image.ShaSum == "" {
+		return false
+	}
+
 	for _, i := range list {
+		if i.ShaSum == "" {
+			continue
+		}
+
 		if i.ShaSum == image.ShaSum {
 			return true
 		}

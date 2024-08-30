@@ -1,6 +1,7 @@
 module github.com/joshbeard/walsh
 
-go 1.22.4
+// go 1.22.4
+go 1.22
 
 require (
 	fyne.io/systray v1.11.0

@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/adrg/xdg"
 	"github.com/charmbracelet/log"
@@ -39,6 +40,8 @@ type Config struct {
 	ShowTray                bool             `yaml:"enable_tray"`
 	MenuIntervals           []RotateInterval `yaml:"menu_intervals"`
 	Once                    bool             `yaml:"-"`
+	MaxRetries              int              `yaml:"max_retries"`
+	RetryInterval           time.Duration    `yaml:"retry_interval"`
 }
 
 type RotateInterval int
@@ -86,7 +89,7 @@ func Load(path string) (*Config, error) {
 }
 
 // Merge merges two Config structs, with the second argument taking precedence.
-func (c Config) Merge(other Config) (Config, error) {
+func (c Config) Merge(other *Config) (*Config, error) {
 	merged := c
 
 	// Merge simple fields
@@ -154,7 +157,7 @@ func (c Config) Merge(other Config) (Config, error) {
 		merged.Sources = other.Sources
 	}
 
-	return merged, nil
+	return &merged, nil
 }
 
 func resolveFilePath(path string) (string, error) {
@@ -259,6 +262,8 @@ func defaultConfig() *Config {
 			43200,
 			86400,
 		},
+		MaxRetries:    3,
+		RetryInterval: 2 * time.Second,
 	}
 }
 
@@ -301,6 +306,14 @@ func applyDefaults(cfg, defaults *Config) {
 
 	if cfg.MenuIntervals == nil {
 		cfg.MenuIntervals = defaults.MenuIntervals
+	}
+
+	if cfg.MaxRetries == 0 {
+		cfg.MaxRetries = defaults.MaxRetries
+	}
+
+	if cfg.RetryInterval == 0 {
+		cfg.RetryInterval = defaults.RetryInterval
 	}
 }
 

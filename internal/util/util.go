@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strconv"
+	"time"
 
 	"github.com/charmbracelet/log"
 )
@@ -176,4 +177,17 @@ func SortFilesByMTime(files []os.DirEntry) {
 		}
 		return infoI.ModTime().Before(infoJ.ModTime())
 	})
+}
+
+func Retry(maxRetries int, retryInterval time.Duration, operation func() error) error {
+	var err error
+	for i := 0; i < maxRetries; i++ {
+		err = operation()
+		if err == nil {
+			return nil
+		}
+		log.Errorf("Error encountered: %s. Retrying in %v...", err, retryInterval)
+		time.Sleep(retryInterval)
+	}
+	return err
 }

@@ -139,7 +139,16 @@ func (s Session) Config() *config.Config {
 	return s.cfg
 }
 
+func (s Session) Type() SessionType {
+	return s.sessType
+}
+
+func (s *Session) UpdateConfig(cfg *config.Config) {
+	s.cfg = cfg
+}
+
 func (s *Session) SetInterval(interval int) {
+	log.Debugf("Setting interval to %d", interval)
 	s.interval = interval
 }
 
@@ -180,13 +189,12 @@ func (s Session) getImages(sources []string) ([]source.Image, error) {
 }
 
 // SetWallpaper sets the wallpaper for the session.
-func (s *Session) SetWallpaper(sources []string, displayStr string) error {
+func (s *Session) SetWallpaper(disp string) error {
 	var err error
-	if len(sources) == 0 {
-		sources = s.cfg.Sources
-	}
 
-	images, err := s.getImages(sources)
+	log.Warnf("Setting wallpaper for display %s", disp)
+
+	images, err := s.getImages(s.Config().Sources)
 	if err != nil {
 		return err
 	}
@@ -194,8 +202,8 @@ func (s *Session) SetWallpaper(sources []string, displayStr string) error {
 	var display Display
 	displays := s.displays
 
-	if displayStr != "" {
-		_, display, err = s.GetDisplay(displayStr)
+	if disp != "" {
+		_, display, err = s.GetDisplay(disp)
 		if err != nil {
 			return err
 		}
@@ -307,6 +315,7 @@ func (s Session) GetDisplay(display string) (int, Display, error) {
 		// Get display with matching ID
 		for _, d := range s.displays {
 			if d.ID == display {
+				log.Debugf("Found display by ID: %s", display)
 				return i, d, nil
 			}
 		}
@@ -565,6 +574,15 @@ func (s Session) ReadList(file string) ([]source.Image, error) {
 
 // WriteList writes a list of images to a file.
 func (s Session) WriteList(file string, image source.Image) error {
+	var err error
+	// Compute the shasum if it's not set
+	if image.ShaSum == "" {
+		image.ShaSum, err = util.Sha256(image.Path)
+		if err != nil {
+			return fmt.Errorf("failed to calculate checksum: %w", err)
+		}
+	}
+
 	list, err := s.ReadList(file)
 	if err != nil {
 		return err

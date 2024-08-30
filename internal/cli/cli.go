@@ -21,6 +21,7 @@ func Setup(cmd *cobra.Command, args []string) (string, *session.Session, error) 
 	if _, _, err := setupLogger(cfg.LogLevel, cfg.LogFile); err != nil {
 		return "", nil, fmt.Errorf("error setting up logger: %w", err)
 	}
+
 	// Create session
 	sess, err := session.NewSession(cfg)
 	if err != nil {

@@ -61,7 +61,7 @@ func Command() *cobra.Command {
 			}
 
 			log.Debug("No subcommand provided, running 'set'")
-			set.Run(cmd, args, cfg)
+			set.Run(cmd, args, &cfg)
 		},
 	}
 

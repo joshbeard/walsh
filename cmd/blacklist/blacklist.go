@@ -6,6 +6,7 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/joshbeard/walsh/internal/cli"
 	"github.com/joshbeard/walsh/internal/session"
+	"github.com/joshbeard/walsh/internal/source"
 	"github.com/spf13/cobra"
 )
 
@@ -51,28 +52,26 @@ func Command() *cobra.Command {
 }
 
 func Blacklist(displayArg string, sess *session.Session) error {
-	// Read current file
-	currentFile, err := sess.ReadCurrent()
-	if err != nil {
-		log.Fatal(err)
-	}
+	log.Infof("Getting current image for display %s", displayArg)
 
-	// Get display's current wallpaper
-	display, err := currentFile.Display(displayArg)
-	// _, display, err := sess.GetDisplay(displayArg)
+	// Get current
+	current, err := sess.GetCurrentWallpaper(displayArg)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// Write to blacklist
-	log.Warnf("Blacklisting image %s", display.Current.Path)
-	err = sess.WriteList(sess.Config().BlacklistFile, display.Current)
+	img := source.Image{
+		Path: current,
+	}
+	log.Warnf("Blacklisting image %s", current)
+	err = sess.WriteList(sess.Config().BlacklistFile, img)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// Set new wallpaper
-	err = sess.SetWallpaper([]string{}, displayArg)
+	err = sess.SetWallpaper(displayArg)
 	if err != nil {
 		return fmt.Errorf("error setting wallpaper: %w", err)
 	}
