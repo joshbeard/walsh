@@ -59,7 +59,14 @@ func (m *menu) addIntervalSubMenuItems(parent *systray.MenuItem, sess *session.S
 
 func (m *menu) getIntervalCheckMark(interval config.RotateInterval, sess *session.Session) (string, bool) {
 	if int(interval) == sess.Interval() {
+		if sess.Type() == session.SessionTypeMacOS {
+			return "", true
+		}
+
 		return "✔ ", true
+	}
+	if sess.Type() == session.SessionTypeMacOS {
+		return "", false
 	}
 	return "  ", false
 }
