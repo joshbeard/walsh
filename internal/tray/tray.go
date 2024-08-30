@@ -1,20 +1,22 @@
 package tray
 
 import (
+	_ "embed"
+
 	"fyne.io/systray"
-	"github.com/charmbracelet/log"
 	"github.com/joshbeard/walsh/internal/session"
-	"github.com/joshbeard/walsh/internal/tray/icon"
 )
 
+//go:embed icon/icon-dark.png
+var icon []byte
+
 type menu struct {
-	Change    menuItem
-	View      menuItem
-	Blacklist menuItem
-	Intervals intervalMenu
-	UseList   menuItem
-	AddToList menuItem
-	Quit      *systray.MenuItem
+	quit      *systray.MenuItem
+	intervals intervalMenu
+	view      menuItem
+	change    menuItem
+	blacklist menuItem
+	useList   menuItem
 }
 
 type intervalMenu struct {
@@ -33,21 +35,15 @@ type menuItem struct {
 	subs   []menuItem
 }
 
-// OnReady is the entry point when the systray is ready.
-func OnReady() {
-	sess := session.Current
-	m := &menu{}
-
-	systray.SetTemplateIcon(icon.Data, icon.Data)
+func Run() {
+	systray.SetTemplateIcon(icon, icon)
 	systray.SetTooltip("Walsh")
 
-	setupMenuItems(m, sess)
+	sess := session.Current
+	m := &menu{}
+	m.Setup(sess)
 
-	go handleMenuEvents(sess, *m)
-	go handleDisplayEvents(sess, *m)
-	go handleIntervalEvents(sess, *m)
-}
-
-func OnExit() {
-	log.Info("Closing Walsh tray")
+	go m.handleMenuEvents(sess)
+	go m.handleDisplayEvents(sess)
+	go m.handleIntervalEvents(sess)
 }

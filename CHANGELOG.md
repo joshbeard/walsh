@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.6.0 (Unreleased)
+
+- Feature: Add System Tray/Menu Bar
+  - Adds an optional system tray icon that allows for quick access to common
+    commands. It uses [fyne.io/systray](https://github.com/fyne-io/systray)
+    and works across multiple platforms and desktop environments.
+  - Existing CLI commands still behave the same way and can be used in
+    conjunction with the system tray.
+- Refactors:
+  - Move the looped set command to its own package called "scheduler".
+  - Check current image each time "view" or "blacklist" is ran
+    - This previously checked the current state file for the image, which only
+      tracks the image as it was last set on a specific display. This change
+      improves accuracy, particularly with virtual desktops on macOS.
+- Fix (macOS): Display identification and consistency
+- Change (config): Lower case JSON keys for image objects (e.g. current,
+  history, lists).
+  - Existing configs will be updated automatically.
+
+
 ## 0.5.4 - 2024-08-16
 
 - Fix Hyprland display indexing @joshbeard (#52)

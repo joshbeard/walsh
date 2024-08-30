@@ -11,7 +11,7 @@ import (
 )
 
 // handleDisplayEvents handles click events for the display-specific submenu items.
-func handleDisplayEvents(sess *session.Session, m menu) {
+func (m menu) handleDisplayEvents(sess *session.Session) {
 	if len(sess.Displays()) < 2 {
 		return
 	}
@@ -20,15 +20,15 @@ func handleDisplayEvents(sess *session.Session, m menu) {
 		go func(i int, d session.Display) {
 			for {
 				select {
-				case <-m.Change.subs[i].parent.ClickedCh:
-					log.Infof("Changing wallpaper on %s: %s", m.Change.subs[i].value, d.Name)
-					err := sess.SetWallpaper(m.Change.subs[i].value)
+				case <-m.change.subs[i].parent.ClickedCh:
+					log.Infof("Changing wallpaper on %s: %s", m.change.subs[i].value, d.Name)
+					err := sess.SetWallpaper(m.change.subs[i].value)
 					if err != nil {
 						log.Fatal(err)
 					}
-				case <-m.View.subs[i].parent.ClickedCh:
-					log.Infof("Viewing wallpaper on %s: %s", m.View.subs[i].value, d.Name)
-					current, err := sess.GetCurrentWallpaper(m.View.subs[i].value)
+				case <-m.view.subs[i].parent.ClickedCh:
+					log.Infof("Viewing wallpaper on %s: %s", m.view.subs[i].value, d.Name)
+					current, err := sess.GetCurrentWallpaper(m.view.subs[i].value)
 					if err != nil {
 						log.Fatalf("Error getting current wallpaper: %v", err)
 					}
@@ -36,39 +36,38 @@ func handleDisplayEvents(sess *session.Session, m menu) {
 					if err = sess.View(current); err != nil {
 						log.Fatal(err)
 					}
-				case <-m.Blacklist.subs[i].parent.ClickedCh:
-					log.Infof("Blacklisting wallpaper on %s: %s", m.Blacklist.subs[i].value, d.Name)
+				case <-m.blacklist.subs[i].parent.ClickedCh:
+					log.Infof("Blacklisting wallpaper on %s: %s", m.blacklist.subs[i].value, d.Name)
 
-					err := beeep.Notify("Walsh", fmt.Sprintf("Blacklisting wallpaper on %s: %s", m.Blacklist.subs[i].value, d.Name), "icon/wicon.png")
+					err := beeep.Notify("Walsh", fmt.Sprintf("Blacklisting wallpaper on %s: %s", m.blacklist.subs[i].value, d.Name), "icon/wicon.png")
 					if err != nil {
 						log.Fatal(err)
 					}
 					// Handle blacklisting wallpaper for the specific display
-					if err := blacklist.Blacklist(m.Blacklist.subs[i].value, sess); err != nil {
+					if err := blacklist.Blacklist(m.blacklist.subs[i].value, sess); err != nil {
 						log.Fatal(err)
 					}
+
+					// TODO: Add to list
 					// case <-m.AddToList.subs[i].ClickedCh:
 					// 	log.Infof("Adding wallpaper to list on %d: %s", d.Index, d.Name)
+
+					// TODO: Set from list
+					// case <-m.SetFromList.subs[i].ClickedCh:
+					//	log.Infof("Setting wallpaper from list on %d: %s", d.Index, d.Name)
 				}
 			}
 		}(i, d)
 	}
 }
 
-func handleIntervalEvents(sess *session.Session, m menu) {
-	log.Warnf("Intervals: %v", m.Intervals)
-	intervals := m.Intervals.subs
-	log.Debug("Handling interval events")
+func (m menu) handleIntervalEvents(sess *session.Session) {
+	intervals := m.intervals.subs
 	for i, interval := range intervals {
 		go func(i int, interval intervalItem) {
-			for {
-				select {
-				case <-m.Intervals.subs[i].item.ClickedCh:
-					// log.Infof("Changing interval to %s", sess.Config().MenuIntervals[i].String())
-					log.Infof("Changing interval to %d", m.Intervals.subs[i].interval)
-					// Set the interval to the selected interval
-					sess.SetInterval(interval.interval)
-				}
+			for range m.intervals.subs[i].item.ClickedCh {
+				log.Infof("Changing interval to %d", m.intervals.subs[i].interval)
+				sess.SetInterval(interval.interval)
 			}
 		}(i, interval)
 	}
@@ -76,36 +75,40 @@ func handleIntervalEvents(sess *session.Session, m menu) {
 }
 
 // handleMenuEvents handles click events for the main menu items.
-func handleMenuEvents(sess *session.Session, m menu) {
+func (m menu) handleMenuEvents(sess *session.Session) {
 	go func() {
 		for {
 			select {
-			case <-m.Change.parent.ClickedCh:
-				if len(m.Change.subs) > 0 {
+			// -- Change wallpaper --
+			case <-m.change.parent.ClickedCh:
+				if len(m.change.subs) > 0 {
 					return
 				}
 
 				log.Info("Changing wallpaper")
-				err := sess.SetWallpaper(m.Change.value)
+				err := sess.SetWallpaper(m.change.value)
 				if err != nil {
 					log.Error(err)
 				}
 
-			case <-m.View.parent.ClickedCh:
-				if len(m.View.subs) > 0 {
+			// -- View wallpaper --
+			case <-m.view.parent.ClickedCh:
+				if len(m.view.subs) > 0 {
 					return
 				}
 
 				log.Info("Viewing wallpaper")
-				current, err := sess.GetCurrentWallpaper(m.View.value)
+				current, err := sess.GetCurrentWallpaper(m.view.value)
 				if err != nil {
 					log.Error(err)
 				}
 				if err = sess.View(current); err != nil {
 					log.Error(err)
 				}
-			case <-m.Blacklist.parent.ClickedCh:
-				if len(m.Blacklist.subs) > 0 {
+
+			// -- Blacklist wallpaper --
+			case <-m.blacklist.parent.ClickedCh:
+				if len(m.blacklist.subs) > 0 {
 					return
 				}
 
@@ -115,15 +118,20 @@ func handleMenuEvents(sess *session.Session, m menu) {
 					log.Error(err)
 				}
 
-				if err := blacklist.Blacklist(m.View.value, sess); err != nil {
+				if err := blacklist.Blacklist(m.view.value, sess); err != nil {
 					log.Error(err)
 				}
 
-			// TODO:
-			// case <-m.AddToList.parent.ClickedCh:
+			// -- TODO: Add To List --
+			// case <-m.addToList.parent.ClickedCh:
 			// 	log.Info("Adding wallpaper to list")
-			// Handle adding wallpaper to list
-			case <-m.Quit.ClickedCh:
+
+			// -- TODO: Set From List --
+			// case <-m.setFromList.parent.ClickedCh:
+			//	log.Info("Setting wallpaper from list")
+
+			// -- Quit  --
+			case <-m.quit.ClickedCh:
 				log.Debug("received quit signal")
 				systray.Quit()
 				return

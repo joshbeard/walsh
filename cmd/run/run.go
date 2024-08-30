@@ -1,4 +1,4 @@
-package set
+package run
 
 import (
 	"fmt"
@@ -6,6 +6,7 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/joshbeard/walsh/internal/cli"
 	"github.com/joshbeard/walsh/internal/config"
+	"github.com/joshbeard/walsh/internal/scheduler"
 	"github.com/joshbeard/walsh/internal/session"
 	"github.com/joshbeard/walsh/internal/util"
 	"github.com/spf13/cobra"
@@ -15,28 +16,19 @@ func Command() *cobra.Command {
 	var cfg config.Config
 
 	cmd := &cobra.Command{
-		Use:     "set [flags] [sources...]",
-		Aliases: []string{"s"},
-		Short:   "set wallpapers (default command)",
-		Long: "Set a random wallpaper from the provided sources, from a list, or " +
-			"directly from a file.\n\n" +
-			"Wallpapers can be set once or at a regular interval and specific displays " +
-			"can be targeted.",
-		Example: "  walsh set -d 0\n" +
-			"  walsh set -d 1 path/to/images\n" +
-			"  walsh s 0\n" +
-			"  walsh s 1 path/to/images",
+		Use:   "run [flags] [sources...]",
+		Short: "run the wallpaper manager",
 		Run: func(cmd *cobra.Command, args []string) {
 			Run(cmd, args, &cfg)
 		},
 	}
 
-	SetFlags(cmd, &cfg)
+	setFlags(cmd, &cfg)
 
 	return cmd
 }
 
-func SetFlags(cmd *cobra.Command, opts *config.Config) {
+func setFlags(cmd *cobra.Command, opts *config.Config) {
 	cmd.Flags().StringVarP(&opts.Display, "display", "d", "",
 		"display to use for operations")
 	cmd.Flags().StringVarP(&opts.List, "list", "l", "",
@@ -45,6 +37,10 @@ func SetFlags(cmd *cobra.Command, opts *config.Config) {
 		"do not track wallpaper")
 	cmd.Flags().BoolVarP(&opts.IgnoreHistory, "ignore-history", "i", false,
 		"ignore the history when selecting a random image")
+	cmd.Flags().IntVarP(&opts.Interval, "interval", "t", 0,
+		"set interval for changing wallpapers")
+	cmd.Flags().BoolVarP(&opts.SystemTray.Enabled, "tray", "", false,
+		"show the system tray")
 }
 
 func Run(cmd *cobra.Command, args []string, cfg *config.Config) {
@@ -73,6 +69,13 @@ func Run(cmd *cobra.Command, args []string, cfg *config.Config) {
 		func() error {
 			return sess.SetWallpaper(display)
 		})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Initialize the scheduler
+	task := scheduler.New(sess, display)
+	err = task.Start()
 	if err != nil {
 		log.Fatal(err)
 	}

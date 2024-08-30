@@ -12,36 +12,41 @@ import (
 )
 
 const (
-	MaxInterval = 31536000
-	MinInterval = 10
+	MaxInterval = 31536000 // 1 year
+	MinInterval = 10       // 10 seconds
 )
 
 type Config struct {
-	Sources                 []string         `yaml:"sources"`
-	ListsDir                string           `yaml:"lists_dir"`
-	BlacklistFile           string           `yaml:"blacklist"`
-	HistoryFile             string           `yaml:"history"`
-	CurrentFile             string           `yaml:"current"`
-	HistorySize             int              `yaml:"history_size"`
-	CacheDir                string           `yaml:"cache_dir"`
-	CacheSize               int              `yaml:"cache_size"`
-	DownloadDest            string           `yaml:"download_dest"`
-	DeleteBlacklistedImages bool             `yaml:"delete_blacklisted_images"`
-	SetCommand              string           `yaml:"set_command"`
-	ViewCommand             string           `yaml:"view_command"`
-	LogLevel                string           `yaml:"log_level"`
-	LogFile                 string           `yaml:"log_file"`
-	ConfigFile              string           `yaml:"config_file"`
-	List                    string           `yaml:"list"`
-	NoTrack                 bool             `yaml:"no_track"`
-	IgnoreHistory           bool             `yaml:"ignore_history"`
-	Display                 string           `yaml:"display"`
-	Interval                int              `yaml:"interval"`
-	ShowTray                bool             `yaml:"enable_tray"`
-	MenuIntervals           []RotateInterval `yaml:"menu_intervals"`
-	Once                    bool             `yaml:"-"`
-	MaxRetries              int              `yaml:"max_retries"`
-	RetryInterval           time.Duration    `yaml:"retry_interval"`
+	Sources                 []string      `yaml:"sources"`
+	ListsDir                string        `yaml:"lists_dir"`
+	BlacklistFile           string        `yaml:"blacklist"`
+	HistoryFile             string        `yaml:"history"`
+	CurrentFile             string        `yaml:"current"`
+	HistorySize             int           `yaml:"history_size"`
+	CacheDir                string        `yaml:"cache_dir"`
+	CacheSize               int           `yaml:"cache_size"`
+	DownloadDest            string        `yaml:"download_dest"`
+	DeleteBlacklistedImages bool          `yaml:"delete_blacklisted_images"`
+	SetCommand              string        `yaml:"set_command"`
+	ViewCommand             string        `yaml:"view_command"`
+	LogLevel                string        `yaml:"log_level"`
+	LogFile                 string        `yaml:"log_file"`
+	ConfigFile              string        `yaml:"config_file"`
+	List                    string        `yaml:"list"`
+	NoTrack                 bool          `yaml:"no_track"`
+	IgnoreHistory           bool          `yaml:"ignore_history"`
+	Display                 string        `yaml:"display"`
+	Interval                int           `yaml:"interval"`
+	SystemTray              SystemTray    `yaml:"system_tray"`
+	MaxRetries              int           `yaml:"max_retries"`
+	RetryInterval           time.Duration `yaml:"retry_interval"`
+	Once                    bool          `yaml:"-"`
+}
+
+type SystemTray struct {
+	Enabled   bool             `yaml:"enabled"`
+	Icon      string           `yaml:"icon,omitempty"`
+	Intervals []RotateInterval `yaml:"intervals"`
 }
 
 type RotateInterval int
@@ -147,7 +152,9 @@ func (c Config) Merge(other *Config) (*Config, error) {
 	if other.Display != "" {
 		merged.Display = other.Display
 	}
-	merged.ShowTray = merged.ShowTray || other.ShowTray
+
+	// FIXME: This is a hack to get the system tray to work
+	merged.SystemTray.Enabled = other.SystemTray.Enabled
 
 	// Merge boolean fields
 	merged.DeleteBlacklistedImages = merged.DeleteBlacklistedImages || other.DeleteBlacklistedImages
@@ -250,20 +257,24 @@ func defaultConfig() *Config {
 		Sources: []string{
 			"dir://" + xdg.Home + "/Pictures/Wallpapers",
 		},
-		MenuIntervals: []RotateInterval{
-			60,
-			300,
-			600,
-			1200,
-			1800,
-			3600,
-			7200,
-			21600,
-			43200,
-			86400,
-		},
 		MaxRetries:    3,
 		RetryInterval: 2 * time.Second,
+		SystemTray: SystemTray{
+			Enabled: true,
+			Icon:    "",
+			Intervals: []RotateInterval{
+				60,
+				300,
+				600,
+				1200,
+				1800,
+				3600,
+				7200,
+				21600,
+				43200,
+				86400,
+			},
+		},
 	}
 }
 
@@ -304,8 +315,8 @@ func applyDefaults(cfg, defaults *Config) {
 		cfg.Sources = defaults.Sources
 	}
 
-	if cfg.MenuIntervals == nil {
-		cfg.MenuIntervals = defaults.MenuIntervals
+	if cfg.SystemTray.Intervals == nil {
+		cfg.SystemTray.Intervals = defaults.SystemTray.Intervals
 	}
 
 	if cfg.MaxRetries == 0 {
@@ -330,7 +341,7 @@ func (c Config) Validate() error {
 		return fmt.Errorf("interval must be greater than or equal to %d", MinInterval)
 	}
 
-	for _, i := range c.MenuIntervals {
+	for _, i := range c.SystemTray.Intervals {
 		if i < 0 {
 			return fmt.Errorf("menu interval must be greater than or equal to 0")
 		}

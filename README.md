@@ -387,10 +387,11 @@ launchctl unload ~/Library/LaunchAgents/com.github.joshbeard.walsh.plist
 ## Limitations and Known Issues
 
 * **macOS:** Each virtual desktop has its own wallpaper, which isn't currently
-  supported by walsh. The wallpaper will only be set on the current desktop.
-  Be mindful of this when using the _blacklist_ feature, as it will reference
-  the wallpaper on the desktop that it was set on, not necessarily the active
-  desktop.
+  supported by walsh. The wallpaper will only be set on the active desktops.
+  When using the _blacklist_ and _view_ features, the current wallpaper of the
+  active desktop is used. When adding a wallpaper to another list, the
+  wallpaper set on the original desktop is used (because the original source is
+  needed).
 
 ## License
 
