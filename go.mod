@@ -4,7 +4,7 @@ go 1.22.4
 
 require (
 	github.com/adrg/xdg v0.5.0
-	github.com/boumenot/gocover-cobertura v1.2.0
+	github.com/boumenot/gocover-cobertura v1.3.0
 	github.com/charmbracelet/log v0.4.0
 	github.com/fatih/color v1.17.0
 	github.com/golangci/golangci-lint v1.59.1
