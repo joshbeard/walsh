@@ -4,25 +4,30 @@ import (
 	"fmt"
 
 	"github.com/joshbeard/walsh/internal/config"
+	"github.com/joshbeard/walsh/internal/logger"
 	"github.com/joshbeard/walsh/internal/session"
 	"github.com/joshbeard/walsh/internal/util"
 	"github.com/spf13/cobra"
 )
 
-func Setup(cmd *cobra.Command, args []string) (string, *session.Session, error) {
+func Setup(cmd *cobra.Command, args []string) (string, error) {
 	// Load config
 	cfg, err := config.Load("")
 	if err != nil {
-		return "", nil, fmt.Errorf("error loading config: %w", err)
+		return "", fmt.Errorf("error loading config: %w", err)
+	}
+
+	if _, _, err := logger.Setup(cfg.LogLevel, cfg.LogFile); err != nil {
+		return "", fmt.Errorf("error setting up logger: %w", err)
 	}
 
 	// Create session
-	sess, err := session.NewSession(cfg)
+	err = session.NewSession(cfg)
 	if err != nil {
-		return "", nil, fmt.Errorf("error creating session: %w", err)
+		return "", fmt.Errorf("error creating session: %w", err)
 	}
 
-	displays := sess.Displays()
+	displays := session.Displays()
 	display, _ := cmd.Flags().GetString("display")
 	if len(args) > 0 && display == "" {
 		// If the argument is a digit, assume it's a display. If it's a display
@@ -40,5 +45,5 @@ func Setup(cmd *cobra.Command, args []string) (string, *session.Session, error) 
 		}
 	}
 
-	return display, sess, nil
+	return display, nil
 }

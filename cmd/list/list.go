@@ -2,11 +2,14 @@ package list
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
 	"github.com/charmbracelet/log"
 	"github.com/joshbeard/walsh/internal/cli"
+	"github.com/joshbeard/walsh/internal/session"
 	"github.com/joshbeard/walsh/internal/util"
 	"github.com/spf13/cobra"
 )
@@ -25,9 +28,61 @@ func Command() *cobra.Command {
 	}
 
 	cmd.AddCommand(AddCommand())
-	cmd.AddCommand(ShowCommand())
 	cmd.AddCommand(ViewCommand())
+	cmd.AddCommand(lsCommand())
+	cmd.AddCommand(editCommand())
 	cmd.PersistentFlags().StringVarP(&listName, "list", "l", "", "list name")
+
+	return cmd
+}
+
+func lsCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "ls",
+		Short:   "view wallpaper lists",
+		Aliases: []string{"list", "show"},
+		Example: "  List all lists:\n" +
+			"    walsh list ls\n\n" +
+			"  List wallpapers in a specific list:\n" +
+			"    walsh list ls mylist",
+		Run: func(cmd *cobra.Command, args []string) {
+			// List name is provided using the flag or it's the last argument.
+			if listName == "" && len(args) > 0 {
+				listName = args[len(args)-1]
+				args = args[:len(args)-1]
+			}
+
+			_, err := cli.Setup(cmd, args)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			if listName == "" {
+				lists, err := session.ListLists()
+				if err != nil {
+					log.Fatal(err)
+				}
+
+				printBanner(fmt.Sprintf("Lists (%d)", len(lists)))
+				for _, list := range lists {
+					fmt.Println(list)
+				}
+
+				return
+			}
+
+			path := filepath.Join(session.Config().ListsDir, listName+".json")
+			list, err := session.ReadList(path)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			printBanner(fmt.Sprintf("%s (%d)", listName, len(list)))
+			for i, wp := range list {
+				fmt.Printf("%d: %s\n", i+1, wp.Source)
+			}
+		},
+	}
 
 	return cmd
 }
@@ -51,13 +106,13 @@ func AddCommand() *cobra.Command {
 				args = args[:len(args)-1]
 			}
 
-			displayArg, sess, err := cli.Setup(cmd, args)
+			displayArg, err := cli.Setup(cmd, args)
 			if err != nil {
 				log.Fatal(err)
 			}
 
 			// Read current file
-			currentFile, err := sess.ReadCurrent()
+			currentFile, err := session.ReadCurrent()
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -68,9 +123,9 @@ func AddCommand() *cobra.Command {
 				log.Fatal(err)
 			}
 
-			path := filepath.Join(sess.Config().ListsDir, listName+".json")
-			log.Infof("Adding %s to list %s", display.Current.Path, path)
-			err = sess.WriteList(path, display.Current)
+			path := filepath.Join(session.Config().ListsDir, listName+".json")
+			log.Infof("adding %s to list %s", display.Current.Path, path)
+			err = session.WriteList(path, display.Current)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -81,35 +136,44 @@ func AddCommand() *cobra.Command {
 	return cmd
 }
 
-func ShowCommand() *cobra.Command {
+// open file in $EDITOR
+func editCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "show",
-		Aliases: []string{"s"},
-		Short:   "show wallpapers in list",
-		Example: "  walsh list show --list mylist\n" +
-			"  walsh list show mylist\n" +
-			"  walsh l s mylist",
+		Use:     "edit",
+		Aliases: []string{"e"},
+		Short:   "edit wallpaper list",
+		Example: "  walsh list edit --list mylist\n" +
+			"  walsh list edit mylist\n" +
+			"  walsh l e mylist",
 		Run: func(cmd *cobra.Command, args []string) {
 			// List name is provided using the flag or it's the last argument.
-			if listName == "" {
+			if listName == "" && len(args) > 0 {
 				listName = args[len(args)-1]
 				args = args[:len(args)-1]
 			}
 
-			_, sess, err := cli.Setup(cmd, args)
+			if listName == "" {
+				log.Fatal("list name is required")
+			}
+
+			_, err := cli.Setup(cmd, args)
 			if err != nil {
 				log.Fatal(err)
 			}
 
-			path := filepath.Join(sess.Config().ListsDir, listName+".json")
-			list, err := sess.ReadList(path)
-			if err != nil {
-				log.Fatal(err)
+			editor := os.Getenv("EDITOR")
+			if editor == "" {
+				log.Fatal("EDITOR environment variable not set")
 			}
 
-			printBanner(fmt.Sprintf("%s (%d)", listName, len(list)))
-			for i, wp := range list {
-				fmt.Printf("%d: %s\n", i+1, wp.Source)
+			path := filepath.Join(session.Config().ListsDir, listName+".json")
+			edit := exec.Command(editor, path)
+			edit.Stdout = os.Stdout
+			edit.Stdin = os.Stdin
+			edit.Stderr = os.Stderr
+
+			if err := edit.Run(); err != nil {
+				log.Fatal(err)
 			}
 		},
 	}
@@ -131,13 +195,13 @@ func ViewCommand() *cobra.Command {
 				args = args[:len(args)-1]
 			}
 
-			_, sess, err := cli.Setup(cmd, args)
+			_, err := cli.Setup(cmd, args)
 			if err != nil {
 				log.Fatal(err)
 			}
 
-			path := filepath.Join(sess.Config().ListsDir, listName+".json")
-			list, err := sess.ReadList(path)
+			path := filepath.Join(session.Config().ListsDir, listName+".json")
+			list, err := session.ReadList(path)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -152,11 +216,11 @@ func ViewCommand() *cobra.Command {
 			}
 
 			selected := list[index-1]
-			log.Infof("Viewing %s", selected.Source)
+			log.Infof("viewing %s", selected.Source)
 			// Check if the image is already cached
 			if selected.Path != "" {
 				if util.FileExists(selected.Path) {
-					if err = sess.View(selected.Path); err != nil {
+					if err = session.View(selected.Path); err != nil {
 						log.Fatal(err)
 					}
 					return

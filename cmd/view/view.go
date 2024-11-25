@@ -3,6 +3,7 @@ package view
 import (
 	"github.com/charmbracelet/log"
 	"github.com/joshbeard/walsh/internal/cli"
+	"github.com/joshbeard/walsh/internal/session"
 	"github.com/spf13/cobra"
 )
 
@@ -14,17 +15,17 @@ func Command() *cobra.Command {
 		Long:    "View the current wallpaper on a specific display.",
 		Example: "  walsh view -d 0\n  walsh v 1",
 		Run: func(cmd *cobra.Command, args []string) {
-			display, sess, err := cli.Setup(cmd, args)
+			display, err := cli.Setup(cmd, args)
 			if err != nil {
 				log.Fatal(err)
 			}
 
-			current, err := sess.GetCurrentWallpaper(display)
+			current, err := session.GetCurrentWallpaper(display)
 			if err != nil {
 				log.Fatal(err)
 			}
 
-			if err = sess.View(current); err != nil {
+			if err = session.View(current); err != nil {
 				log.Fatal(err)
 			}
 		},

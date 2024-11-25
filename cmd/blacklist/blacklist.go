@@ -1,8 +1,12 @@
 package blacklist
 
 import (
+	"fmt"
+
 	"github.com/charmbracelet/log"
 	"github.com/joshbeard/walsh/internal/cli"
+	"github.com/joshbeard/walsh/internal/session"
+	"github.com/joshbeard/walsh/internal/source"
 	"github.com/spf13/cobra"
 )
 
@@ -26,38 +30,18 @@ func Command() *cobra.Command {
 			"  blacklist wallpaper and remove the file:\n" +
 			"    walsh bl --rm 0",
 		Run: func(cmd *cobra.Command, args []string) {
-			displayArg, sess, err := cli.Setup(cmd, args)
+			displayArg, err := cli.Setup(cmd, args)
 			if err != nil {
 				log.Fatal(err)
 			}
 
-			// Read current file
-			currentFile, err := sess.ReadCurrent()
-			if err != nil {
-				log.Fatal(err)
+			if len(args) == 0 {
+				log.Fatal("no display or image provided")
 			}
 
-			// Get display's current wallpaper
-			display, err := currentFile.Display(displayArg)
-			// _, display, err := sess.GetDisplay(displayArg)
-			if err != nil {
+			if err = Blacklist(displayArg); err != nil {
 				log.Fatal(err)
 			}
-
-			// Write to blacklist
-			log.Warnf("Blacklisting image %s", display.Current.Path)
-			err = sess.WriteList(sess.Config().BlacklistFile, display.Current)
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			// Set new wallpaper
-			err = sess.SetWallpaper([]string{}, displayArg)
-			if err != nil {
-				log.Errorf("Error setting wallpaper: %s", err)
-				return
-			}
-			// TODO: argument for deleting file
 		},
 	}
 
@@ -65,4 +49,33 @@ func Command() *cobra.Command {
 		"delete the image from the source")
 
 	return cmd
+}
+
+func Blacklist(displayArg string) error {
+	log.Infof("getting current image for display %s", displayArg)
+
+	// Get current
+	current, err := session.GetCurrentWallpaper(displayArg)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Write to blacklist
+	img := source.Image{
+		Path: current,
+	}
+	log.Warnf("blacklisting image %s", current)
+	err = session.WriteList(session.Config().BlacklistFile, img)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Set new wallpaper
+	err = session.SetWallpaper(displayArg)
+	if err != nil {
+		return fmt.Errorf("error setting wallpaper: %w", err)
+	}
+	// TODO: argument for deleting file
+
+	return nil
 }

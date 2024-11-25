@@ -11,6 +11,8 @@ import (
 	"path/filepath"
 	"sort"
 	"strconv"
+	"syscall"
+	"time"
 
 	"github.com/charmbracelet/log"
 )
@@ -120,6 +122,9 @@ func MkDir(path string) error {
 
 // RunCmd executes the given command and returns its output as a string.
 func RunCmd(cmd string) (string, error) {
+	// Assume everything we run is low priority.
+	const priority = 0
+
 	// Create an exec.Command object to represent the command.
 	command := exec.Command("sh", "-c", cmd)
 
@@ -130,10 +135,19 @@ func RunCmd(cmd string) (string, error) {
 	command.Stderr = &stderr
 
 	// Run the command.
-	log.Debugf("Running command: %s", cmd)
-	err := command.Run()
-	if err != nil {
-		return "", err
+	log.Debug("running command", "cmd", cmd)
+	if err := command.Start(); err != nil {
+		return "", fmt.Errorf("failed to start command: %w", err)
+	}
+
+	// Set the process priority to low.
+	if err := syscall.Setpriority(syscall.PRIO_PROCESS, command.Process.Pid, priority); err != nil {
+		return "", fmt.Errorf("failed to set process priority: %w", err)
+	}
+
+	// Wait for the command to finish.
+	if err := command.Wait(); err != nil {
+		return "", fmt.Errorf("failed to wait for command: %w", err)
 	}
 
 	// Log stderr
@@ -176,4 +190,17 @@ func SortFilesByMTime(files []os.DirEntry) {
 		}
 		return infoI.ModTime().Before(infoJ.ModTime())
 	})
+}
+
+func Retry(maxRetries int, retryInterval time.Duration, operation func() error) error {
+	var err error
+	for i := 0; i < maxRetries; i++ {
+		err = operation()
+		if err == nil {
+			return nil
+		}
+		log.Errorf("Error encountered: %s. Retrying in %v...", err, retryInterval)
+		time.Sleep(retryInterval)
+	}
+	return err
 }

@@ -1,10 +1,8 @@
 package session
 
 import (
-	"encoding/json"
 	"fmt"
 
-	"github.com/charmbracelet/log"
 	"github.com/joshbeard/walsh/internal/config"
 	"github.com/joshbeard/walsh/internal/util"
 )
@@ -33,7 +31,7 @@ func (s sway) GetDisplays() ([]Display, error) {
 		return nil, fmt.Errorf("failed to run sway monitors: %w", err)
 	}
 
-	return s.parseDisplays(result)
+	return parseWaylandDisplays(result)
 }
 
 // GetCurrentWallpaper returns the current wallpaper for the specified display
@@ -41,27 +39,4 @@ func (s sway) GetDisplays() ([]Display, error) {
 // wallpaper.
 func (s sway) GetCurrentWallpaper(display, _ Display) (string, error) {
 	return getSwwwWallpaper(display, Display{})
-}
-
-func (s sway) parseDisplays(result string) ([]Display, error) {
-	jsonObj := []map[string]interface{}{}
-	err := json.Unmarshal([]byte(result), &jsonObj)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse json: %w", err)
-	}
-
-	displays := make([]Display, 0, len(jsonObj))
-	for i, value := range jsonObj {
-		name := value["name"]
-
-		log.Warnf("i: %d, name: %s", i, name)
-		displays = append(displays, Display{
-			Index: i,
-			Name:  name.(string),
-		})
-	}
-
-	log.Warnf("found %d displays: %+v", len(displays), displays)
-
-	return displays, nil
 }

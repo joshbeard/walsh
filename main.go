@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"os"
+
 	"strings"
 	"time"
 
@@ -13,10 +14,14 @@ import (
 	"golang.org/x/exp/rand"
 
 	"github.com/joshbeard/walsh/cmd/blacklist"
+	"github.com/joshbeard/walsh/cmd/cfg"
 	"github.com/joshbeard/walsh/cmd/download"
 	"github.com/joshbeard/walsh/cmd/list"
+	"github.com/joshbeard/walsh/cmd/menu"
+	"github.com/joshbeard/walsh/cmd/run"
 	"github.com/joshbeard/walsh/cmd/set"
 	"github.com/joshbeard/walsh/cmd/view"
+	"github.com/joshbeard/walsh/internal/config"
 )
 
 // Set at build time
@@ -35,18 +40,21 @@ var banner = []string{
 	`g4OFAnICBgPzg4UCdgODhiICA4OGJgPzg4OFAnIGQ4OCcgICA4OGIK`,
 }
 
+func main() {
+	if err := Command().Execute(); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+}
+
 func Command() *cobra.Command {
+	var conf config.Config
 	rootCmd := &cobra.Command{
 		Use:   "walsh",
 		Short: "walsh is a tool for managing wallpapers",
 		Long: renderBanner() +
 			"\nwalsh is a tool for managing wallpapers",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			logLevel, _ := cmd.Flags().GetString("log-level")
-			logFile, _ := cmd.Flags().GetString("log-file")
-			if _, _, err := setupLogger(logLevel, logFile); err != nil {
-				return err
-			}
 
 			return nil
 		},
@@ -56,38 +64,33 @@ func Command() *cobra.Command {
 				os.Exit(0)
 			}
 
-			log.Debug("No subcommand provided, running 'set'")
-			cmd.SetArgs([]string{"set"})
-			if err := cmd.Execute(); err != nil {
-				log.Fatal(err)
-			}
+			log.Debug("no subcommand provided, running 'set'")
+			set.Run(cmd, args, &conf)
 		},
 	}
 
 	rootCmd.AddCommand(blacklist.Command())
-	rootCmd.AddCommand(list.Command())
-	rootCmd.AddCommand(set.Command())
+	rootCmd.AddCommand(cfg.Command())
 	rootCmd.AddCommand(download.Command())
-	rootCmd.AddCommand(view.Command())
 	rootCmd.AddCommand(list.AddCommand())
+	rootCmd.AddCommand(list.Command())
+	rootCmd.AddCommand(menu.Command())
+	rootCmd.AddCommand(run.Command())
+	rootCmd.AddCommand(set.Command())
+	rootCmd.AddCommand(view.Command())
 
-	rootCmd.PersistentFlags().StringP("config", "c", "", "path to config file")
-	rootCmd.PersistentFlags().StringP("display", "d", "",
-		"display to use for operations")
-	rootCmd.PersistentFlags().StringP("log-level", "L", "info",
+	rootCmd.PersistentFlags().StringVarP(&conf.ConfigFile, "config", "c", "",
+		"path to config file")
+	rootCmd.PersistentFlags().StringVarP(&conf.LogLevel, "log-level", "L", "",
 		"log level (debug, info, warn, error)")
-	rootCmd.PersistentFlags().StringP("log-file", "", "",
+	rootCmd.PersistentFlags().StringVarP(&conf.LogFile, "log-file", "F", "",
 		"log file (default is stderr)")
-	rootCmd.PersistentFlags().BoolP("version", "V", false, "print version information")
+	rootCmd.PersistentFlags().BoolP("version", "V", false,
+		"print version information")
+
+	set.SetFlags(rootCmd, &conf)
 
 	return rootCmd
-}
-
-func main() {
-	if err := Command().Execute(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
 }
 
 func renderBanner() string {
@@ -135,45 +138,4 @@ func randomColor() func(a ...interface{}) string {
 	}
 
 	return colors[rand.Intn(len(colors))]
-}
-
-func setupLogger(level, file string) (*log.Logger, *os.File, error) {
-	logH := os.Stderr
-	if file != "" {
-		var err error
-		logH, err = os.OpenFile(file, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
-		if err != nil {
-			return nil, nil, fmt.Errorf("failed to open log file: %w", err)
-		}
-	}
-
-	if level == "" {
-		logH, err := os.Open(os.DevNull)
-		if err != nil {
-			return nil, nil, fmt.Errorf("failed to open log file: %w", err)
-		}
-
-		logger := log.New(logH)
-		log.SetDefault(logger)
-
-		return logger, logH, nil
-	}
-
-	logger := log.New(logH)
-
-	logLevel, err := log.ParseLevel(level)
-	if err != nil {
-		return nil, nil, fmt.Errorf("could not parse log level: %w", err)
-	}
-
-	logger.SetPrefix("walsh")
-	logger.SetOutput(logH)
-	logger.SetReportCaller(true)
-	logger.SetReportTimestamp(true)
-	logger.SetLevel(logLevel)
-
-	log.SetLevel(logLevel)
-	log.SetDefault(logger)
-
-	return logger, logH, nil
 }

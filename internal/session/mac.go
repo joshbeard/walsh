@@ -1,7 +1,5 @@
 package session
 
-// TODO: macOS support.
-
 import (
 	"encoding/json"
 	"fmt"
@@ -30,7 +28,7 @@ func isMacOS() bool {
 func (m macos) SetWallpaper(path string, display Display) error {
 	osascript := fmt.Sprintf(
 		`osascript -e 'tell application "System Events" to set picture of desktop %s to "%s"'`,
-		display.Name,
+		display.ID,
 		path,
 	)
 
@@ -52,30 +50,41 @@ func (m macos) GetDisplays() ([]Display, error) {
 	var data map[string]interface{}
 	err = json.Unmarshal([]byte(results), &data)
 	if err != nil {
-		log.Fatalf("Error unmarshalling JSON: %v", err)
+		log.Fatalf("error unmarshalling JSON: %v", err)
 	}
 
 	spDisplays, ok := data["SPDisplaysDataType"].([]interface{})
 	if !ok {
-		log.Fatalf("Error asserting SPDisplaysDataType as array")
+		log.Fatalf("error asserting SPDisplaysDataType as array")
 	}
 
 	var displays []Display
 	for _, display := range spDisplays {
 		displayMap, ok := display.(map[string]interface{})
 		if !ok {
-			log.Fatalf("Error asserting display as map")
+			log.Fatalf("error asserting display as map")
 		}
+
 		ndrvs, ok := displayMap["spdisplays_ndrvs"].([]interface{})
 		if !ok {
-			log.Fatalf("Error asserting spdisplays_ndrvs as array")
+			log.Fatalf("error asserting spdisplays_ndrvs as array")
 		}
 
 		for ii := range ndrvs {
-			displays = append(displays, Display{Index: ii + 1, Name: fmt.Sprintf("%d", ii+1)})
+			name := ndrvs[ii].(map[string]interface{})["_name"].(string)
+
+			// displays are targeted by their index, which doesn't align with the ID.
+			// id := ndrvs[ii].(map[string]interface{})["_spdisplays_displayID"].(string)
+			id := ii + 1
+
+			displays = append(displays, Display{
+				ID:    fmt.Sprintf("%d", id),
+				Index: id,
+				Name:  name,
+			})
 		}
 
-		log.Debugf("Found %d displays", len(ndrvs))
+		log.Debugf("found %d displays", len(ndrvs))
 	}
 
 	return displays, nil
@@ -84,7 +93,7 @@ func (m macos) GetDisplays() ([]Display, error) {
 func (m macos) GetCurrentWallpaper(display, _ Display) (string, error) {
 	osascript := fmt.Sprintf(
 		`osascript -e 'tell application "System Events" to get picture of desktop %s'`,
-		display.Name,
+		display.ID,
 	)
 
 	results, err := util.RunCmd(osascript)

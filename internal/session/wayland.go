@@ -1,6 +1,7 @@
 package session
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -25,6 +26,30 @@ func findDisplayLine(output, displayName string) (string, error) {
 	return "", fmt.Errorf("no wallpaper found for display %s", displayName)
 }
 
+// parseWaylandDisplays parses the output of `swaymsg -t get_outputs` and
+// `hyprctl monitors` to get a list of displays.
+func parseWaylandDisplays(output string) ([]Display, error) {
+	jsonOutput := []map[string]interface{}{}
+	err := json.Unmarshal([]byte(output), &jsonOutput)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse json: %w", err)
+	}
+
+	displays := make([]Display, 0, len(jsonOutput))
+	for i, display := range jsonOutput {
+		label := fmt.Sprintf("%s - %s", display["name"].(string), display["model"].(string))
+
+		displays = append(displays, Display{
+			Index: i,
+			ID:    fmt.Sprintf("%d", i),
+			Name:  display["name"].(string),
+			Label: label,
+		})
+	}
+
+	return displays, nil
+}
+
 func getSwwwWallpaper(display, _ Display) (string, error) {
 	result, err := util.RunCmd("swww query")
 	if err != nil {
@@ -40,7 +65,7 @@ func getSwwwWallpaper(display, _ Display) (string, error) {
 	// e.g. eDP-1: 1920x1200, scale: 1, currently displaying: image: /tmp/unsplash-zG8VFOg7wgo.jpg
 	parts := strings.Split(line, "image: ")
 	if len(parts) < 2 {
-		return "", fmt.Errorf("no image found for display %s", display.Name)
+		return "", fmt.Errorf("no image found for display %s", display.ID)
 	}
 
 	return strings.TrimSpace(parts[1]), nil

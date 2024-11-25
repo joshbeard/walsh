@@ -36,11 +36,11 @@ func (h hyprland) getInstance() (string, error) {
 		return "", fmt.Errorf("failed to unmarshal hyprctl -j instances: %w", err)
 	}
 
-	log.Debugf("found %d hyprland instances", len(instancesJSON))
-
-	// Asume instance 0 for now
+	// Assume instance 0 for now
 	instance := instancesJSON[0]
 	instanceID := instance["instance"].(string)
+
+	log.Debug("found hyprland instance", "instance", instanceID)
 
 	return instanceID, nil
 }
@@ -59,7 +59,7 @@ func (h hyprland) GetDisplays() ([]Display, error) {
 		return nil, fmt.Errorf("failed to run hyprctl monitors: %w", err)
 	}
 
-	return h.parseDisplays(result)
+	return parseWaylandDisplays(result)
 }
 
 // GetCurrentWallpaper returns the current wallpaper for the specified display
@@ -67,25 +67,4 @@ func (h hyprland) GetDisplays() ([]Display, error) {
 // wallpaper.
 func (h hyprland) GetCurrentWallpaper(display, _ Display) (string, error) {
 	return getSwwwWallpaper(display, Display{})
-}
-
-// parseDisplays parses the output of `hyprctl monitors` and returns a list of
-// displays in their struct form.
-func (h hyprland) parseDisplays(output string) ([]Display, error) {
-	jsonOutput := []map[string]interface{}{}
-	err := json.Unmarshal([]byte(output), &jsonOutput)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal hyprctl monitors: %w", err)
-	}
-
-	displays := []Display{}
-	for i, monitor := range jsonOutput {
-		displays = append(displays, Display{
-			Name:  monitor["name"].(string),
-			Index: i,
-			// Index: int(monitor["id"].(float64)),
-		})
-	}
-
-	return displays, nil
 }

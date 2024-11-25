@@ -84,7 +84,7 @@ check-vuln: ## Check for vulnerabilities using 'govulncheck'
 .PHONY: build
 build: ## Build the binary for the host platform
 	mkdir -p dist
-	go build -ldflags $(LD_FLAGS) -o $(DIST_DIR)/$(EXEC_NAME)
+	CGO_ENABLED=1 go build -ldflags $(LD_FLAGS) -o $(DIST_DIR)/$(EXEC_NAME)
 
 .PHONY: install
 install: ## Install the binary

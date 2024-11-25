@@ -48,13 +48,13 @@ func BingCommand() *cobra.Command {
 		Short:   "download wallpapers from Bing",
 		Example: "  walsh download bing -- -n 10",
 		Run: func(cmd *cobra.Command, args []string) {
-			sess, dest := commonSetup(cmd, args, dlOptions{})
+			dest := commonSetup(cmd, args, dlOptions{})
 			noMove, _ := cmd.Flags().GetBool("no-move")
 
 			// Pass all remaining arguments to gosimac
 			run := fmt.Sprintf(`gosimac bing %s`, strings.Join(args, " "))
 
-			log.Info("Downloading Bing wallpapers")
+			log.Info("downloading Bing wallpapers")
 			result, err := util.RunCmd(run)
 			if err != nil {
 				log.Fatal(err)
@@ -62,8 +62,8 @@ func BingCommand() *cobra.Command {
 
 			log.Debugf("Bing result: %s", result)
 
-			count := processDownloads(sess, noMove, dest)
-			log.Infof("Downloaded %d new images", count)
+			count := processDownloads(noMove, dest)
+			log.Infof("downloaded %d new images", count)
 		},
 	}
 
@@ -77,13 +77,13 @@ func UnsplashCommand(opts dlOptions) *cobra.Command {
 		Short:   "download wallpapers from Unsplash",
 		Example: "  walsh download unsplash -- --query 'nature'",
 		Run: func(cmd *cobra.Command, args []string) {
-			sess, dest := commonSetup(cmd, args, opts)
+			dest := commonSetup(cmd, args, opts)
 			noMove, _ := cmd.Flags().GetBool("no-move")
 
 			// Pass all remaining arguments to gosimac
 			run := fmt.Sprintf(`gosimac unsplash %s`, strings.Join(args, " "))
 
-			log.Info("Downloading images from Unsplash")
+			log.Info("downloading images from Unsplash")
 			result, err := util.RunCmd(run)
 			if err != nil {
 				log.Fatal(err)
@@ -91,38 +91,38 @@ func UnsplashCommand(opts dlOptions) *cobra.Command {
 
 			log.Debugf("Unsplash result: %s", result)
 
-			count := processDownloads(sess, noMove, dest)
-			log.Infof("Downloaded %d new images", count)
+			count := processDownloads(noMove, dest)
+			log.Infof("downloaded %d new images", count)
 		},
 	}
 
 	return cmd
 }
 
-func commonSetup(cmd *cobra.Command, args []string, opts dlOptions) (*session.Session, string) {
+func commonSetup(cmd *cobra.Command, args []string, opts dlOptions) string {
 	// Ensure 'gosimac' is in the PATH
 	if _, err := exec.LookPath("gosimac"); err != nil {
 		log.Fatal("gosimac not found in PATH")
 	}
 
-	_, sess, err := cli.Setup(cmd, args)
+	_, err := cli.Setup(cmd, args)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	dest := sess.Config().DownloadDest
+	dest := session.Config().DownloadDest
 	if opts.dest != "" {
 		dest = opts.dest
 	}
 
 	if dest == "" {
-		log.Fatal("No destination specified")
+		log.Fatal("no destination specified")
 	}
 
-	return sess, dest
+	return dest
 }
 
-func processDownloads(sess *session.Session, noMove bool, dest string) int {
+func processDownloads(noMove bool, dest string) int {
 	homeDir := os.Getenv("HOME")
 	gosimacDir := filepath.Join(homeDir, "Pictures", "GoSiMac")
 
@@ -131,26 +131,26 @@ func processDownloads(sess *session.Session, noMove bool, dest string) int {
 		log.Fatal(err)
 	}
 
-	log.Debugf("Downloaded images: %+v", images)
+	log.Debugf("downloaded images: %+v", images)
 
-	log.Debugf("Filtering blacklisted images")
-	blacklist, err := sess.ReadList(sess.Config().BlacklistFile)
+	log.Debugf("filtering blacklisted images")
+	blacklist, err := session.ReadList(session.Config().BlacklistFile)
 	if err != nil {
-		log.Fatal("Error reading blacklist: %s", err)
+		log.Fatal("error reading blacklist: %s", err)
 	}
 	blacklisted := source.GetMatches(images, blacklist)
 
 	for _, img := range images {
 		for _, bl := range blacklisted {
 			if img.ShaSum == bl.ShaSum {
-				log.Debugf("Blacklisted: %s", img.Path)
+				log.Debugf("blacklisted: %s", img.Path)
 
 				// Remove the blacklisted image from the list
 				images = source.RemoveImage(images, img)
 
 				// Delete the file
 				if err := os.Remove(img.Path); err != nil {
-					log.Errorf("Error removing blacklisted file: %s", err)
+					log.Errorf("error removing blacklisted file: %s", err)
 				}
 			}
 		}
@@ -159,10 +159,10 @@ func processDownloads(sess *session.Session, noMove bool, dest string) int {
 	processed := 0
 	for _, img := range images {
 		if util.FileExists(filepath.Join(dest, filepath.Base(img.Path))) {
-			log.Debugf("File already exists in destination: %s", img.Path)
+			log.Debugf("file already exists in destination: %s", img.Path)
 
 			if err := os.Remove(img.Path); err != nil {
-				log.Errorf("Error removing file: %s", err)
+				log.Errorf("error removing file: %s", err)
 			}
 
 			continue
@@ -172,7 +172,7 @@ func processDownloads(sess *session.Session, noMove bool, dest string) int {
 
 		if !noMove {
 			if err := moveImage(img, dest); err != nil {
-				log.Errorf("Error moving file: %s", err)
+				log.Errorf("error moving file: %s", err)
 				continue
 			}
 		}
@@ -187,7 +187,7 @@ func moveImage(src source.Image, dest string) error {
 	}
 
 	// Move the file
-	log.Debugf("Moving %s to %s", src.Path, dest)
+	log.Debugf("moving %s to %s", src.Path, dest)
 	target := filepath.Join(dest, filepath.Base(src.Path))
 	if err := os.Rename(src.Path, target); err != nil {
 		return fmt.Errorf("failed to move file: %w", err)

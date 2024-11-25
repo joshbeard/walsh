@@ -1,6 +1,7 @@
 package session
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -23,6 +24,8 @@ import (
 // wallpaper.
 const MaxRetries = 6
 
+var This *Session
+
 // defaultViewCmds are the default commands to view an image.
 var defaultViewCmds = []string{
 	`xdg-open '{{path}}'`,
@@ -37,6 +40,12 @@ type Session struct {
 	svc      SessionProvider
 	sessType SessionType
 	cfg      *config.Config
+	interval time.Duration
+
+	Ctx     context.Context
+	Cancel  context.CancelFunc
+	SigChan chan os.Signal
+	Ticker  *time.Ticker
 }
 
 // SessionProvider is an interface for interacting with the desktop session.
@@ -59,8 +68,10 @@ type CurrentWallpaper struct {
 // the display's actual identifier (e.g. eDP-1, HDMI-1, etc.) or an index based
 // on how they are queried from the system (e.g. 0, 1, 2, etc.).
 type Display struct {
+	ID      string       `json:"id"`
 	Index   int          `json:"index"`
 	Name    string       `json:"name"`
+	Label   string       `json:"label"`
 	Current source.Image `json:"current"`
 }
 
@@ -90,10 +101,11 @@ type SetWallpaperParams struct {
 }
 
 // NewSession creates a new session based on the current session type.
-func NewSession(cfg *config.Config) (*Session, error) {
+// func NewSession(cfg *config.Config) (*Session, error) {
+func NewSession(cfg *config.Config) error {
 	sessType, err := detect()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	var svc SessionProvider
@@ -107,55 +119,100 @@ func NewSession(cfg *config.Config) (*Session, error) {
 	case SessionTypeSway:
 		svc = NewSway(cfg)
 	default:
-		log.Warnf("Unknown session type: %d", sessType)
-		return nil, errors.New("unknown session type")
+		return errors.New("could not determine session type")
 	}
 
 	display, err := svc.GetDisplays()
 	if err != nil {
-		log.Errorf("Error getting displays: %s", err)
-		return nil, err
+		log.Errorf("getting displays", "err", err)
+		return err
 	}
 
-	return &Session{
+	// If a specific display is requested via config, limit the displays to that
+	// display.
+	if cfg.Display != "" {
+		log.Info("limiting displays to display in config", "display", cfg.Display)
+		_, d, err := GetDisplay(cfg.Display)
+		if err != nil {
+			return err
+		}
+
+		display = []Display{d}
+	}
+
+	sess := &Session{
 		svc:      svc,
 		sessType: sessType,
 		displays: display,
 		cfg:      cfg,
-	}, nil
+		interval: cfg.Interval,
+	}
+
+	This = sess
+
+	return nil
+}
+
+func Refresh() error {
+	display, err := This.svc.GetDisplays()
+	if err != nil {
+		return err
+	}
+
+	This.displays = display
+
+	return nil
 }
 
 // Config returns the session's config.
-func (s Session) Config() *config.Config {
-	return s.cfg
+func Config() *config.Config {
+	return This.cfg
+}
+
+func Type() SessionType {
+	return This.sessType
+}
+
+func SetConfig(cfg *config.Config) {
+	This.cfg = cfg
+}
+
+func SetInterval(interval time.Duration) {
+	This.interval = interval
+}
+
+func Interval() time.Duration {
+	return This.interval
 }
 
 // getImages gets images from the sources and filters them based on the
 // blacklist and history files.
-func (s Session) getImages(sources []string) ([]source.Image, error) {
-	log.Debugf("Getting images from sources")
+func getImages(sources []string) ([]source.Image, error) {
+	log.Debugf("getting images from sources")
 	images, err := source.GetImages(sources)
 	if err != nil {
-		log.Errorf("Error getting images: %s", err)
+		log.Error("getting images", "err", err)
 		return nil, err
 	}
 
-	log.Debugf("Filtering blacklisted images")
-	blacklist, err := s.ReadList(s.cfg.BlacklistFile)
+	log.Debugf("filtering blacklisted images")
+	blacklist, err := ReadList(This.cfg.BlacklistFile)
 	if err != nil {
-		log.Errorf("Error reading blacklist: %s", err)
+		log.Error("reading blacklist", "err", err)
 		return nil, err
 	}
 	images = source.FilterImages(images, blacklist)
 
-	history, err := s.ReadList(s.cfg.HistoryFile)
+	history, err := ReadList(This.cfg.HistoryFile)
 	if err != nil {
-		log.Errorf("Error reading history: %s", err)
+		log.Error("reading history", "err", err)
 		return nil, err
 	}
 	// if the number of images is fewer than the history size, don't filter
-	if len(images) > s.cfg.HistorySize {
-		log.Debugf("Filtering images in history")
+	if len(images) > This.cfg.HistorySize {
+		log.Debug("filtering images in history",
+			"count", len(history),
+			"history_size", This.cfg.HistorySize)
 		images = source.FilterImages(images, history)
 	}
 
@@ -163,22 +220,21 @@ func (s Session) getImages(sources []string) ([]source.Image, error) {
 }
 
 // SetWallpaper sets the wallpaper for the session.
-func (s *Session) SetWallpaper(sources []string, displayStr string) error {
+func SetWallpaper(disp string) error {
 	var err error
-	if len(sources) == 0 {
-		sources = s.cfg.Sources
-	}
 
-	images, err := s.getImages(sources)
+	log.Debug("setting wallpaper", "display", disp)
+
+	images, err := getImages(This.cfg.Sources)
 	if err != nil {
 		return err
 	}
 
 	var display Display
-	displays := s.displays
+	displays := This.displays
 
-	if displayStr != "" {
-		_, display, err = s.GetDisplay(displayStr)
+	if disp != "" {
+		_, display, err = GetDisplay(disp)
 		if err != nil {
 			return err
 		}
@@ -198,7 +254,7 @@ func (s *Session) SetWallpaper(sources []string, displayStr string) error {
 			// Synchronize access to the images slice
 			mu.Lock()
 			if len(images) > 0 {
-				image, err = source.Random(images, s.cfg.CacheDir)
+				image, err = source.Random(images, This.cfg.CacheDir)
 			} else {
 				mu.Unlock()
 				errChan <- errors.New("no images available")
@@ -207,15 +263,15 @@ func (s *Session) SetWallpaper(sources []string, displayStr string) error {
 			mu.Unlock()
 
 			if err != nil {
-				log.Errorf("Error selecting random image for display %s: %s", d.Name, err)
+				log.Error("selecting random image for display", "display", d.ID, "err", err)
 				time.Sleep(1 * time.Second)
 				continue
 			}
-			log.Debugf("Number of images: %d", len(images))
+			log.Debugf("number of images: %d", len(images))
 
-			err = s.svc.SetWallpaper(image.Path, d)
+			err = This.svc.SetWallpaper(image.Path, d)
 			if err != nil {
-				log.Errorf("Error setting wallpaper for display %s: %s. Will retry", d.Name, err)
+				log.Error("setting wallpaper for display; will retry", "display", d.ID, "err", err)
 				time.Sleep(1 * time.Second)
 				continue
 			}
@@ -228,17 +284,17 @@ func (s *Session) SetWallpaper(sources []string, displayStr string) error {
 				images = source.RemoveImage(images, image)
 			}
 
-			err = s.WriteCurrent(d, image)
+			err = WriteCurrent(d, image)
 			if err != nil {
-				log.Errorf("Error saving to history for display %s: %s", d.Name, err)
+				log.Error("saving to history", "display", d.ID, "err", err)
 				errChan <- err
 				mu.Unlock()
 				return
 			}
 
-			err = s.WriteHistory(image)
+			err = WriteHistory(image)
 			if err != nil {
-				log.Errorf("Error writing to history for display %s: %s", d.Name, err)
+				log.Error("writing to history", "display", d.ID, "err", err)
 				errChan <- err
 				mu.Unlock()
 				return
@@ -246,7 +302,7 @@ func (s *Session) SetWallpaper(sources []string, displayStr string) error {
 
 			mu.Unlock()
 
-			log.Infof("Set wallpaper for display %s: %s", d.Name, image.Path)
+			log.Info("set wallpaper", "display", d.ID, "image", image.Path)
 			return
 		}
 		errChan <- errors.New("max retries exceeded")
@@ -265,16 +321,16 @@ func (s *Session) SetWallpaper(sources []string, displayStr string) error {
 	default:
 	}
 
-	err = s.cleanupTmpDir()
+	err = cleanupTmpDir()
 	if err != nil {
-		log.Errorf("Error cleaning up tmp dir: %s", err)
+		log.Errorf("cleaning up tmp dir", "err", err)
 	}
 
 	return nil
 }
 
 // GetDisplay gets a display by index or name.
-func (s Session) GetDisplay(display string) (int, Display, error) {
+func GetDisplay(display string) (int, Display, error) {
 	// If it's a number, assume it's an index. Otherwise, look up by name.
 	if util.IsNumber(display) {
 		i, err := strconv.Atoi(display)
@@ -282,15 +338,20 @@ func (s Session) GetDisplay(display string) (int, Display, error) {
 			return -1, Display{}, err
 		}
 
-		if i >= len(s.displays) {
-			return -1, Display{}, errors.New("display index out of range")
+		// Get display with matching ID
+		for _, d := range This.displays {
+			if d.ID == display {
+				log.Debug("found display by ID", "display", display)
+				return i, d, nil
+			}
 		}
 
-		return i, s.displays[i], nil
+		return -1, Display{}, errors.New("display not found")
 	}
 
-	for i, d := range s.displays {
+	for i, d := range This.displays {
 		if d.Name == display {
+			log.Debug("found display by name", "display", display)
 			return i, d, nil
 		}
 	}
@@ -299,15 +360,30 @@ func (s Session) GetDisplay(display string) (int, Display, error) {
 }
 
 // Displays returns the displays for the session.
-func (s Session) Displays() []Display {
-	return s.displays
+func Displays() []Display {
+	return This.displays
+}
+
+func TargetDisplays() []Display {
+	// Return displays that are specified in the config.
+	if This.cfg.Display != "" {
+		log.Warn("limiting displays to display in config", "display", This.cfg.Display)
+		_, d, err := GetDisplay(This.cfg.Display)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		return []Display{d}
+	}
+
+	return Displays()
 }
 
 // Display returns the display for the session by index or name.
 func (c CurrentWallpaper) Display(display string) (Display, error) {
 	for _, d := range c.Displays {
 		// If the display arg is a number, match the index. otherwise, match the name.
-		if strconv.Itoa(d.Index) == display || d.Name == display {
+		if d.ID == display || d.Name == display {
 			return d, nil
 		}
 	}
@@ -318,31 +394,47 @@ func (c CurrentWallpaper) Display(display string) (Display, error) {
 // detect the current session type based on the environment and/or
 // commands.
 func detect() (SessionType, error) {
-	// Hyprland - XDG_CURRENT_DESKTOP=Hyprland
-	// X11 - XDG_SESSION_TYPE=x11
 	xdgCurrentDesktop := os.Getenv("XDG_CURRENT_DESKTOP")
 	xdgSessionType := os.Getenv("XDG_SESSION_TYPE")
+	xAuthority := os.Getenv("XAUTHORITY")
+	i3Socket := os.Getenv("I3SOCK")
 	swaySocket := os.Getenv("SWAYSOCK")
 	isMac := isMacOS()
 
+	sessionType := SessionTypeUnknown
+
 	switch {
 	case isMac:
-		log.Debugf("Detected macOS session")
-		return SessionTypeMacOS, nil
+		sessionType = SessionTypeMacOS
 	case xdgCurrentDesktop == "Hyprland":
-		log.Debugf("Detected Hyprland desktop")
-		return SessionTypeHyprland, nil
+		sessionType = SessionTypeHyprland
 	case xdgSessionType == "wayland" && swaySocket != "":
-		log.Debugf("Detected Sway session")
-		return SessionTypeSway, nil
+		sessionType = SessionTypeSway
 	case xdgSessionType == "wayland":
-		log.Debugf("Detected Wayland session")
-		return SessionTypeWayland, nil
-	case xdgSessionType == "x11":
-		log.Debugf("Detected X11 session")
-		return SessionTypeX11Unknown, nil
+		sessionType = SessionTypeWayland
+	case xdgSessionType == "x11" || xAuthority != "" || i3Socket != "":
+		sessionType = SessionTypeX11Unknown
+	}
+
+	return sessionType, nil
+}
+
+func (s SessionType) String() string {
+	switch s {
+	case SessionTypeUnknown:
+		return "unknown"
+	case SessionTypeX11Unknown:
+		return "x11"
+	case SessionTypeWayland:
+		return "wayland"
+	case SessionTypeSway:
+		return "sway"
+	case SessionTypeHyprland:
+		return "hyprland"
+	case SessionTypeMacOS:
+		return "macos"
 	default:
-		return SessionTypeUnknown, errors.New("unknown session type")
+		return "unknown"
 	}
 }
 
@@ -375,29 +467,29 @@ func getSetCmd(l []string, path, display string) (string, error) {
 }
 
 // GetCurrentWallpaper gets the current wallpaper for a display.
-func (s Session) GetCurrentWallpaper(display string) (string, error) {
-	_, d, err := s.GetDisplay(display)
+func GetCurrentWallpaper(display string) (string, error) {
+	_, d, err := GetDisplay(display)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to get display %s: %w", display, err)
 	}
 
-	currentFile, err := s.ReadCurrent()
+	currentFile, err := ReadCurrent()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(err, "display", display)
 	}
 
 	currentDisplay, err := currentFile.Display(display)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(err, "display", display)
 	}
 
-	return s.svc.GetCurrentWallpaper(d, currentDisplay)
+	return This.svc.GetCurrentWallpaper(d, currentDisplay)
 }
 
 // View opens an image in the default image viewer.
-func (s Session) View(image string) error {
-	log.Debugf("Viewing %s", image)
-	cmd, err := s.getViewCommand(image)
+func View(image string) error {
+	log.Debug("viewing image", "image", image)
+	cmd, err := getViewCommand(image)
 	if err != nil {
 		return err
 	}
@@ -414,9 +506,9 @@ func parseViewCmd(cmd, path string) string {
 	return strings.ReplaceAll(cmd, "{{path}}", path)
 }
 
-func (s Session) getViewCommand(image string) (string, error) {
-	if s.cfg.ViewCommand != "" {
-		return parseViewCmd(s.cfg.ViewCommand, image), nil
+func getViewCommand(image string) (string, error) {
+	if This.cfg.ViewCommand != "" {
+		return parseViewCmd(This.cfg.ViewCommand, image), nil
 	}
 
 	if isMacOS() {
@@ -439,22 +531,22 @@ func (s Session) getViewCommand(image string) (string, error) {
 // e.g. "0:/path/to/image.jpg"
 // This only updates the line for the given display, leaving the rest of the
 // file unchanged.
-func (s Session) WriteCurrent(display Display, path source.Image) error {
+func WriteCurrent(display Display, path source.Image) error {
 	var err error
 	// Update the display's current path
 	display.Current = path
 
 	// Ensure the file exists before reading
-	if !util.FileExists(s.cfg.CurrentFile) {
+	if !util.FileExists(This.cfg.CurrentFile) {
 		// Create the file if it doesn't exist
-		err = os.WriteFile(s.cfg.CurrentFile, []byte("{}"), 0o644)
+		err = os.WriteFile(This.cfg.CurrentFile, []byte("{}"), 0o644)
 		if err != nil {
 			return fmt.Errorf("failed to create the file: %w", err)
 		}
 	}
 
 	// Read the existing file content
-	fileBytes, err := os.ReadFile(s.cfg.CurrentFile)
+	fileBytes, err := os.ReadFile(This.cfg.CurrentFile)
 	if err != nil {
 		return fmt.Errorf("failed to read the file: %w", err)
 	}
@@ -469,7 +561,7 @@ func (s Session) WriteCurrent(display Display, path source.Image) error {
 	// Update or append the display in the current wallpaper list
 	found := false
 	for i, d := range current.Displays {
-		if d.Index == display.Index {
+		if d.ID == display.ID {
 			found = true
 			current.Displays[i] = display
 			break
@@ -486,7 +578,7 @@ func (s Session) WriteCurrent(display Display, path source.Image) error {
 	}
 
 	// Write the updated content back to the file
-	err = os.WriteFile(s.cfg.CurrentFile, updatedBytes, 0o644)
+	err = os.WriteFile(This.cfg.CurrentFile, updatedBytes, 0o644)
 	if err != nil {
 		return fmt.Errorf("failed to write the updated content to the file: %w", err)
 	}
@@ -495,13 +587,13 @@ func (s Session) WriteCurrent(display Display, path source.Image) error {
 }
 
 // ReadCurrent reads the current wallpaper data for the session.
-func (s Session) ReadCurrent() (CurrentWallpaper, error) {
-	if !util.FileExists(s.cfg.CurrentFile) {
+func ReadCurrent() (CurrentWallpaper, error) {
+	if !util.FileExists(This.cfg.CurrentFile) {
 		return CurrentWallpaper{}, nil
 	}
 
 	// Read the file
-	fileBytes, err := os.ReadFile(s.cfg.CurrentFile)
+	fileBytes, err := os.ReadFile(This.cfg.CurrentFile)
 	if err != nil {
 		return CurrentWallpaper{}, fmt.Errorf("failed to read the file: %w", err)
 	}
@@ -516,8 +608,22 @@ func (s Session) ReadCurrent() (CurrentWallpaper, error) {
 	return current, nil
 }
 
+func ListLists() ([]string, error) {
+	lists := []string{}
+	files, err := os.ReadDir(This.cfg.ListsDir)
+	if err != nil {
+		return lists, err
+	}
+
+	for _, file := range files {
+		lists = append(lists, strings.TrimSuffix(file.Name(), ".json"))
+	}
+
+	return lists, nil
+}
+
 // ReadList reads a list of images from a file.
-func (s Session) ReadList(file string) ([]source.Image, error) {
+func ReadList(file string) ([]source.Image, error) {
 	if !util.FileExists(file) {
 		return nil, nil
 	}
@@ -539,15 +645,24 @@ func (s Session) ReadList(file string) ([]source.Image, error) {
 }
 
 // WriteList writes a list of images to a file.
-func (s Session) WriteList(file string, image source.Image) error {
-	list, err := s.ReadList(file)
+func WriteList(file string, image source.Image) error {
+	var err error
+	// Compute the shasum if it's not set
+	if image.ShaSum == "" {
+		image.ShaSum, err = util.Sha256(image.Path)
+		if err != nil {
+			return fmt.Errorf("failed to calculate checksum: %w", err)
+		}
+	}
+
+	list, err := ReadList(file)
 	if err != nil {
 		return err
 	}
 
 	// Check if it's already in the list
 	if source.ImageInList(image, list) {
-		log.Warnf("Image already in list: %s", image.Path)
+		log.Warn("image already in list", "image", image.Path)
 		return nil
 	}
 
@@ -566,21 +681,21 @@ func (s Session) WriteList(file string, image source.Image) error {
 		return fmt.Errorf("failed to write the updated content to the file: %w", err)
 	}
 
-	log.Debugf("Added image %s to list: %s", image.Path, file)
+	log.Debug("added image list", "list", file, "image", image.Path)
 
 	return nil
 }
 
 // WriteHistory writes an image to the history file.
-func (s Session) WriteHistory(image source.Image) error {
+func WriteHistory(image source.Image) error {
 	// Write the image to the history file
-	err := s.WriteList(s.cfg.HistoryFile, image)
+	err := WriteList(This.cfg.HistoryFile, image)
 	if err != nil {
 		return err
 	}
 
 	// Trim the history file if it's too large
-	err = s.TrimHistory()
+	err = TrimHistory()
 	if err != nil {
 		return err
 	}
@@ -589,14 +704,14 @@ func (s Session) WriteHistory(image source.Image) error {
 }
 
 // TrimHistory trims the history file to the configured size.
-func (s Session) TrimHistory() error {
-	history, err := s.ReadList(s.cfg.HistoryFile)
+func TrimHistory() error {
+	history, err := ReadList(This.cfg.HistoryFile)
 	if err != nil {
 		return err
 	}
 
-	if len(history) > s.cfg.HistorySize {
-		history = history[len(history)-s.cfg.HistorySize:]
+	if len(history) > This.cfg.HistorySize {
+		history = history[len(history)-This.cfg.HistorySize:]
 	}
 
 	// Marshal the updated content back to json
@@ -606,7 +721,7 @@ func (s Session) TrimHistory() error {
 	}
 
 	// Write the updated content back to the file
-	err = os.WriteFile(s.cfg.HistoryFile, updatedBytes, 0o644)
+	err = os.WriteFile(This.cfg.HistoryFile, updatedBytes, 0o644)
 	if err != nil {
 		return fmt.Errorf("failed to write the updated content to the file: %w", err)
 	}
@@ -615,30 +730,30 @@ func (s Session) TrimHistory() error {
 }
 
 // cleanupTmpDir cleans up the tmp directory by removing old files.
-func (s Session) cleanupTmpDir() error {
-	if !util.FileExists(s.cfg.CacheDir) {
+func cleanupTmpDir() error {
+	if !util.FileExists(This.cfg.CacheDir) {
 		return nil
 	}
 
-	files, err := os.ReadDir(s.cfg.CacheDir)
+	files, err := os.ReadDir(This.cfg.CacheDir)
 	if err != nil {
 		return err
 	}
 
-	if len(files) > s.cfg.CacheSize {
+	if len(files) > This.cfg.CacheSize {
 		// Sort by mod time
 		util.SortFilesByMTime(files)
 
 		// Get the paths of the current wallpapers
 		currentWallpapers := make(map[string]bool)
-		for _, display := range s.displays {
+		for _, display := range This.displays {
 			currentWallpapers[display.Current.Path] = true
 		}
 
 		// Remove the oldest files that are not current wallpapers
 		removedCount := 0
-		for i := 0; i < len(files) && removedCount < len(files)-s.cfg.CacheSize; i++ {
-			path := filepath.Join(s.cfg.CacheDir, files[i].Name())
+		for i := 0; i < len(files) && removedCount < len(files)-This.cfg.CacheSize; i++ {
+			path := filepath.Join(This.cfg.CacheDir, files[i].Name())
 			if !currentWallpapers[path] {
 				err := os.Remove(path)
 				if err != nil {
@@ -650,4 +765,33 @@ func (s Session) cleanupTmpDir() error {
 	}
 
 	return nil
+}
+
+func ResetTicker() {
+	if This.Ticker != nil {
+		if This.interval == 0 {
+			log.Debug("pausing wallpaper change", "interval", Interval())
+			This.Ticker.Stop()
+			return
+		}
+
+		log.Debug("updating change interval", "interval", Interval(), "next", NextTick())
+		This.Ticker.Reset(Interval())
+
+		return
+	}
+
+	if This.interval == 0 {
+		log.Debug("wallpaper change is paused", "interval", Interval())
+		return
+	}
+
+	log.Info("creating new ticker with interval",
+		"interval", Interval(), "next", NextTick())
+	This.Ticker = time.NewTicker(This.interval)
+}
+
+func NextTick() string {
+	next := time.Now().Add(Interval())
+	return next.Format("2006-01-02 15:04:05")
 }
