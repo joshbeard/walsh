@@ -1,6 +1,7 @@
 module github.com/joshbeard/walsh
 
-go 1.22.4
+go 1.23.0
+
 toolchain go1.23.6
 
 require (
@@ -12,7 +13,7 @@ require (
 	github.com/segmentio/golines v0.12.2
 	github.com/spf13/cobra v1.9.1
 	golang.org/x/exp v0.0.0-20240909161429-701f63a606c0
-	golang.org/x/vuln v1.1.3
+	golang.org/x/vuln v1.1.4
 	gopkg.in/yaml.v3 v3.0.1
 	mvdan.cc/gofumpt v0.7.0
 )
