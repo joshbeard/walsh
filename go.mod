@@ -6,7 +6,7 @@ toolchain go1.23.6
 
 require (
 	github.com/adrg/xdg v0.5.3
-	github.com/boumenot/gocover-cobertura v1.3.0
+	github.com/boumenot/gocover-cobertura v1.4.0
 	github.com/charmbracelet/log v0.4.0
 	github.com/fatih/color v1.18.0
 	github.com/golangci/golangci-lint v1.64.6
