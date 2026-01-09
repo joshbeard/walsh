@@ -19,6 +19,11 @@ func Command() *cobra.Command {
 				log.Fatal(err)
 			}
 
+			if display == "" {
+				log.Debugf("Session: %v", sess)
+				log.Fatal("No display detected!")
+			}
+
 			current, err := sess.GetCurrentWallpaper(display)
 			if err != nil {
 				log.Fatal(err)

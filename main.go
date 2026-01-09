@@ -5,14 +5,15 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"time"
+
+	"math/rand/v2"
 
 	"github.com/charmbracelet/log"
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
-	"golang.org/x/exp/rand"
 
 	"github.com/joshbeard/walsh/cmd/blacklist"
+	"github.com/joshbeard/walsh/cmd/diag"
 	"github.com/joshbeard/walsh/cmd/download"
 	"github.com/joshbeard/walsh/cmd/list"
 	"github.com/joshbeard/walsh/cmd/set"
@@ -65,6 +66,7 @@ func Command() *cobra.Command {
 	}
 
 	rootCmd.AddCommand(blacklist.Command())
+	rootCmd.AddCommand(diag.Command())
 	rootCmd.AddCommand(list.Command())
 	rootCmd.AddCommand(set.Command())
 	rootCmd.AddCommand(download.Command())
@@ -109,14 +111,12 @@ func renderVersion() string {
 	str += " | Commit " + color.GreenString(commit)
 	str += " | Date " + color.GreenString(date)
 	str += "\n\nhttps://github.com/joshbeard/walsh\n"
-	str += "Copyright (c) 2024 Josh Beard | 0BSD License"
+	str += "Copyright (c) 2024-2026 Josh Beard | 0BSD License"
 
 	return str
 }
 
 func randomColor() func(a ...interface{}) string {
-	rand.Seed(uint64(time.Now().UnixNano()))
-
 	colors := []func(a ...interface{}) string{
 		color.New(color.FgRed).SprintFunc(),
 		color.New(color.FgGreen).SprintFunc(),
@@ -134,7 +134,7 @@ func randomColor() func(a ...interface{}) string {
 		color.New(color.FgHiWhite).SprintFunc(),
 	}
 
-	return colors[rand.Intn(len(colors))]
+	return colors[rand.IntN(len(colors))]
 }
 
 func setupLogger(level, file string) (*log.Logger, *os.File, error) {

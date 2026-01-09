@@ -28,9 +28,12 @@ func isMacOS() bool {
 }
 
 func (m macos) SetWallpaper(path string, display Display) error {
+	// macOS AppleScript uses 1-based desktop numbers, but we use 0-based indexing
+	// internally for consistency with Linux
+	desktopNum := display.Index + 1
 	osascript := fmt.Sprintf(
-		`osascript -e 'tell application "System Events" to set picture of desktop %s to "%s"'`,
-		display.Name,
+		`osascript -e 'tell application "System Events" to set picture of desktop %d to "%s"'`,
+		desktopNum,
 		path,
 	)
 
@@ -72,7 +75,7 @@ func (m macos) GetDisplays() ([]Display, error) {
 		}
 
 		for ii := range ndrvs {
-			displays = append(displays, Display{Index: ii + 1, Name: fmt.Sprintf("%d", ii+1)})
+			displays = append(displays, Display{Index: ii, Name: fmt.Sprintf("%d", ii)})
 		}
 
 		log.Debugf("Found %d displays", len(ndrvs))
@@ -82,9 +85,12 @@ func (m macos) GetDisplays() ([]Display, error) {
 }
 
 func (m macos) GetCurrentWallpaper(display, _ Display) (string, error) {
+	// macOS AppleScript uses 1-based desktop numbers, but we use 0-based indexing
+	// internally for consistency with Linux
+	desktopNum := display.Index + 1
 	osascript := fmt.Sprintf(
-		`osascript -e 'tell application "System Events" to get picture of desktop %s'`,
-		display.Name,
+		`osascript -e 'tell application "System Events" to get picture of desktop %d'`,
+		desktopNum,
 	)
 
 	results, err := util.RunCmd(osascript)

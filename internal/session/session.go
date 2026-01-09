@@ -33,10 +33,13 @@ var defaultViewCmds = []string{
 
 // Session is a struct for managing the desktop session's wallpaper.
 type Session struct {
-	displays []Display
-	svc      SessionProvider
-	sessType SessionType
-	cfg      *config.Config
+	displays       []Display
+	displayByName  map[string]Display // O(1) lookup by name
+	displayByIndex map[int]Display    // O(1) lookup by user-facing index
+	indexByName    map[string]int     // O(1) lookup of user-facing index by name
+	svc            SessionProvider
+	sessType       SessionType
+	cfg            *config.Config
 }
 
 // SessionProvider is an interface for interacting with the desktop session.
@@ -111,18 +114,31 @@ func NewSession(cfg *config.Config) (*Session, error) {
 		return nil, errors.New("unknown session type")
 	}
 
-	display, err := svc.GetDisplays()
+	displays, err := svc.GetDisplays()
 	if err != nil {
 		log.Errorf("Error getting displays: %s", err)
 		return nil, err
 	}
 
-	return &Session{
-		svc:      svc,
-		sessType: sessType,
-		displays: display,
-		cfg:      cfg,
-	}, nil
+	session := &Session{
+		svc:            svc,
+		sessType:       sessType,
+		displays:       displays,
+		cfg:            cfg,
+		displayByName:  make(map[string]Display),
+		displayByIndex: make(map[int]Display),
+		indexByName:    make(map[string]int),
+	}
+
+	// Build lookup maps with normalized user-facing indices (always 0-based)
+	for i, display := range displays {
+		userIndex := i // Always use 0-based indexing for user interface
+		session.displayByName[display.Name] = display
+		session.displayByIndex[userIndex] = display
+		session.indexByName[display.Name] = userIndex
+	}
+
+	return session, nil
 }
 
 // Config returns the session's config.
@@ -273,26 +289,33 @@ func (s *Session) SetWallpaper(sources []string, displayStr string) error {
 	return nil
 }
 
-// GetDisplay gets a display by index or name.
+// GetDisplay gets a display by index or name using O(1) map lookups.
 func (s Session) GetDisplay(display string) (int, Display, error) {
-	// If it's a number, assume it's an index. Otherwise, look up by name.
+	// If it's a number, try both index lookup and name lookup
 	if util.IsNumber(display) {
 		i, err := strconv.Atoi(display)
 		if err != nil {
 			return -1, Display{}, err
 		}
 
-		if i >= len(s.displays) {
-			return -1, Display{}, errors.New("display index out of range")
-		}
-
-		return i, s.displays[i], nil
-	}
-
-	for i, d := range s.displays {
-		if d.Name == display {
+		// First try as a user-facing index (0-based)
+		if d, exists := s.displayByIndex[i]; exists {
 			return i, d, nil
 		}
+
+		// If index lookup failed, try as a display name (handles cases like macOS where display name is "1")
+		if d, exists := s.displayByName[display]; exists {
+			userIndex := s.indexByName[display]
+			return userIndex, d, nil
+		}
+
+		return -1, Display{}, errors.New("display index out of range")
+	}
+
+	// Look up by name
+	if d, exists := s.displayByName[display]; exists {
+		userIndex := s.indexByName[display]
+		return userIndex, d, nil
 	}
 
 	return -1, Display{}, errors.New("display not found")
@@ -386,9 +409,20 @@ func (s Session) GetCurrentWallpaper(display string) (string, error) {
 		log.Fatal(err)
 	}
 
-	currentDisplay, err := currentFile.Display(display)
-	if err != nil {
-		log.Fatal(err)
+	// Find the current display by matching the actual display struct
+	// instead of relying on CurrentWallpaper.Display which uses old logic
+	var currentDisplay Display
+	found := false
+	for _, cd := range currentFile.Displays {
+		if cd.Index == d.Index && cd.Name == d.Name {
+			currentDisplay = cd
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		return "", errors.New("current wallpaper not found for display")
 	}
 
 	return s.svc.GetCurrentWallpaper(d, currentDisplay)
