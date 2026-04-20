@@ -36,7 +36,7 @@ jobs:
         run: echo "${{ secrets.GPG_PRIVATE_KEY }}" > key.gpg
 
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@90a3faa9d0182683851fbfa97ca1a2cb983bfca3 # v6.2.1
+        uses: goreleaser/goreleaser-action@e24998b8b67b290c2fa8b7c14fcfa7de2c5c9b8c # v7.1.0
         with:
           args: release --clean
         env:
