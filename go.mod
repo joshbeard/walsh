@@ -12,7 +12,7 @@ require (
 	github.com/spf13/cobra v1.10.2
 	golang.org/x/vuln v1.3.0
 	gopkg.in/yaml.v3 v3.0.1
-	mvdan.cc/gofumpt v0.9.2
+	mvdan.cc/gofumpt v0.10.0
 )
 
 require (
