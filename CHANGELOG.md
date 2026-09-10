@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.5.5 - 2026-09-10
+
+### Fixes
+
+- macOS display indexes are now 0-based like other platforms (AppleScript still gets 1-based values)
+- `set` with no `--display` applies wallpapers to every display instead of defaulting to one
+
+### Added
+
+- `walsh diag` (`diagnostics` / `info`) — list detected displays and session config
+
+### Maintenance
+
+- Require Go 1.26
+- Refresh Go modules and GitHub Actions
+- Docs: README sections, cache directory path
+
 ## 0.5.4 - 2024-08-16
 
 - Fix Hyprland display indexing @joshbeard (#52)
